@@ -18,6 +18,33 @@ def load_embeddings(path):
     return words
 
 
+def compute_correlations(embeddings, dataset):
+    """Get the correlations between a number of embedding dictionaries and a similarity dataset"""
+    cosines = [[] * len(embeddings)]
+    scores = []
+    pearson = []
+    spearman = []
+    for pair, value in dataset.items():
+        pair = pair.split("_")
+        cont = False
+        for emb in embeddings:
+            if pair[0] not in emb or pair[1] not in emb:
+                cont = True
+        if cont:
+            pass
+
+        for i, emb in enumerate(embeddings):
+            cosines[i].append(get_cosine(pair[0], pair[1], emb))
+
+        scores.append(value)
+
+    for cosine in cosines:
+        p_r, s_r = get_correlation(np.array(cosine), np.array(scores))
+        pearson.append(p_r), spearman.append(s_r)
+
+    return pearson, spearman
+
+
 def get_cosine(word_1, word_2, embeddings):
     """Computes the cosine similarity of two words given an embedding dictionary."""
     emb_1 = embeddings[word_1]
@@ -45,11 +72,12 @@ def retrieve_SIMLEX999_data_dict(path_to_data):
     data_required = {}
     for line in data_simlex[1:]:
         line_contents = line.split("\t")
-        data_required[line_contents[0] + "_" + line_contents[1]] = line_contents[3]
+        data_required[line_contents[0] + "_" + line_contents[1]] = float(line_contents[3])
 
     return data_required
 
-def retrieve_MEN_data_dict (path_to_data):
+
+def retrieve_MEN_data_dict(path_to_data):
     ########################
     """Loads the MEN data"""
     ########################
@@ -62,6 +90,6 @@ def retrieve_MEN_data_dict (path_to_data):
     data_required = {}
     for line in data_men:
         line_contents = line.split(" ")
-        data_required[line_contents[0] + "_" + line_contents[1]] = line_contents[2][:-1]
+        data_required[line_contents[0] + "_" + line_contents[1]] = float(line_contents[2][:-1])
 
     return data_required
