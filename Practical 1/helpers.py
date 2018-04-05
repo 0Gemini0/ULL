@@ -41,10 +41,27 @@ def retrieve_SIMLEX999_data_dict(path_to_data):
     with open(path_to_data, "r") as f:
         data_simlex = f.readlines()
 
-    """Creates a dict with only the word pairs and the SimLex-999 score"""
+    """Creates a dict with word pairs as keys and the SimLex-999 score as value"""
     data_required = {}
     for line in data_simlex[1:]:
         line_contents = line.split("\t")
         data_required[line_contents[0] + "_" + line_contents[1]] = line_contents[3]
+
+    return data_required
+
+def retrieve_MEN_data_dict (path_to_data):
+    ########################
+    """Loads the MEN data"""
+    ########################
+
+    """Reads all the data"""
+    with open(path_to_data, "r") as f:
+        data_men = f.readlines()
+
+    """Creates a dict with word pairs as keys and the MEN score as value"""
+    data_required = {}
+    for line in data_men:
+        line_contents = line.split(" ")
+        data_required[line_contents[0] + "_" + line_contents[1]] = line_contents[2][:-1]
 
     return data_required
