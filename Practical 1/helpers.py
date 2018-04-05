@@ -93,3 +93,22 @@ def retrieve_MEN_data_dict(path_to_data):
         data_required[line_contents[0] + "_" + line_contents[1]] = float(line_contents[2][:-1])
 
     return data_required
+
+
+def retrieve_word_analogy_data_dict (path_to_data):
+    #################################
+    """Loads the word analogy data"""
+    #################################
+
+    """Reads all the data"""
+    with open(path_to_data, "r") as f:
+        data_word_analogy = f.readlines()
+
+    """Creates a dict with a_a* as keys and [b b*] as values"""
+    data_required = defaultdict(lambda: [])
+    for line in data_word_analogy[1:]:
+        if(line[0] is not ":"):
+            line_contents = line.split(" ")
+            data_required[line_contents[0] + "_" + line_contents[1]].append([line_contents[2], line_contents[3][:-1]])
+
+    return data_required
