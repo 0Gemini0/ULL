@@ -1,15 +1,16 @@
 """
 This file will contain the main script.
 """
+import numpy as np
+
+from helpers import load_embeddings
 
 
 def main():
     # Load word embeddings
-    with open("Embeddings/bow2.words", 'r') as f:
-        for i, line in enumerate(f):
-            print(line)
-            if i > 100:
-                break
+    deps = load_embeddings("Embeddings/deps.words")
+    bow2 = load_embeddings("Embeddings/bow2.words")
+    bow5 = load_embeddings("Embeddings/bow5.words")
 
 
 if __name__ == '__main__':
