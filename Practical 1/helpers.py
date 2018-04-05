@@ -23,3 +23,10 @@ def get_cosine(word_1, word_2, embeddings):
     emb_1 = embeddings[word_1]
     emb_2 = embeddings[word_2]
     return 1. - cosine(emb_1, emb_2)
+
+
+def get_correlation(x, y):
+    """Computes the spearman and pearson correlation coëfficients of two arrays"""
+    pearson = pearsonr(x, y)
+    spearman = spearmanr(x, y)
+    return pearson, spearman
