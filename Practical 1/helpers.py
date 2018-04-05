@@ -20,7 +20,7 @@ def load_embeddings(path):
 
 def compute_correlations(embeddings, dataset):
     """Get the correlations between a number of embedding dictionaries and a similarity dataset"""
-    cosines = [[] * len(embeddings)]
+    cosines = [[] for i in range(len(embeddings))]
     scores = []
     pearson = []
     spearman = []
@@ -31,7 +31,7 @@ def compute_correlations(embeddings, dataset):
             if pair[0] not in emb or pair[1] not in emb:
                 cont = True
         if cont:
-            pass
+            continue
 
         for i, emb in enumerate(embeddings):
             cosines[i].append(get_cosine(pair[0], pair[1], emb))
