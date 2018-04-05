@@ -30,3 +30,21 @@ def get_correlation(x, y):
     pearson = pearsonr(x, y)
     spearman = spearmanr(x, y)
     return pearson, spearman
+
+
+def retrieve_SIMLEX999_data_dict(path_to_data):
+    ########################################################
+    """Loads the relevant SimLex-999 for the task at hand"""
+    ########################################################
+
+    """Reads all the data"""
+    with open(path_to_data, "r") as f:
+        data_simlex = f.readlines()
+
+    """Creates a dict with only the word pairs and the SimLex-999 score"""
+    data_required = {}
+    for line in data_simlex[1:]:
+        line_contents = line.split("\t")
+        data_required[line_contents[0] + "_" + line_contents[1]] = line_contents[3]
+
+    return data_required
