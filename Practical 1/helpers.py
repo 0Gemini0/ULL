@@ -5,6 +5,10 @@ import numpy as np
 from scipy.spatial.distance import cosine
 from scipy.stats import pearsonr, spearmanr
 from collections import defaultdict
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from plotnine import *
+from plotnine.data import *
 
 
 def load_embeddings(path):
@@ -113,3 +117,49 @@ def retrieve_word_analogy_data_dict (path_to_data):
             data_required[line_contents[0] + "_" + line_contents[1]].append([line_contents[2], line_contents[3][:-1]])
 
     return data_required
+
+
+def reduce_dimensions(embeddings, dim, t_dim=None, verbose=False):
+    """
+    Reduce the dimensions of word embeddings with PCA and TSNE
+    Args:
+    * embeddings (dict): word embeddings with keys.
+    * dim (int): final dimension after reduction.
+    * t_dim (int): if not none, embeddings are compressed to t_dim before tsne.
+    """
+
+    # Unpack embeddings from dictionary
+    embeddings = np.array(embeddings.values())
+
+    # Define dimension reduction algorithms
+    pca = PCA(n_components=dim)
+    pca_tsne = PCA(n_components=t_dim)
+    tsne = TSNE(n_components=dim)
+
+    # Reduce dimensions with PCA and TSNE
+    vprint("Reducing dimensions with PCA...", verbose)
+    pca_clusters = pca.fit_transform(embeddings)
+    if t_dim is not None:
+        vprint("Pre-reducing dimensions for TSNE...")
+        tsne_pre_clusters = pca_tsne.fit_transform(embeddings)
+    else:
+        tsne_pre_clusters = embeddings
+    vprint("Reducing dimensions with TSNE...")
+    tsne_clusters = tsne.fit_transform(tsne_pre_clusters)
+
+    return pca_clusters, tsne_clusters
+
+
+def visualize_embeddings_2d(compressed_embeddings, title, num):
+    """
+    Visualize 2-D compressed embeddings.
+    """
+    (ggplot(compressed_embeddings[num, :], aes('dim_1', 'dim_2'))
+    + geom_point(size=75, alpha=0.8)
+    + theme_xkcd()
+    + ggtitle(title))
+
+
+def vprint(message, verbose):
+    if verbose:
+        print(message)

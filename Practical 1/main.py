@@ -35,5 +35,5 @@ def main(opt):
 
 
 if __name__ == '__main__':
-    opt = Settings.parser
+    opt = Settings.args
     main(opt)
