@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 """
 This file will contain the main script.
 """
@@ -29,8 +31,9 @@ def main(opt):
         print("pearson: {}, spearman: {} for MEN".format(p_men, s_men))
 
     elif (opt.exercise == 4):
+        pass
 
 
 if __name__ == '__main__':
-    opt = Settings()
+    opt = Settings.parser
     main(opt)
