@@ -10,11 +10,13 @@ def main():
 
     exercise = 3
 
+    # Load word embeddings into dictionaries
+    deps = load_embeddings("Embeddings/deps.words")
+    bow2 = load_embeddings("Embeddings/bow2.words")
+    bow5 = load_embeddings("Embeddings/bow5.words")
+
+
     if (exercise == 3):
-        # Load word embeddings into dictionaries
-        deps = load_embeddings("Embeddings/deps.words")
-        bow2 = load_embeddings("Embeddings/bow2.words")
-        bow5 = load_embeddings("Embeddings/bow5.words")
 
         # Load similarity dataset into dictionaries
         simlex = retrieve_SIMLEX999_data_dict("Similarities/SimLex-999.txt")
@@ -27,7 +29,7 @@ def main():
         print("pearson: {}, spearman: {} for SimLex".format(p_sim, s_sim))
         print("pearson: {}, spearman: {} for MEN".format(p_men, s_men))
 
-    elif (exercise == 2):
+    elif (exercise == 4):
 
 
 if __name__ == '__main__':
