@@ -127,12 +127,14 @@ def reduce_dimensions(embeddings, dim, t_dim=None, t_num=5000, verbose=True):
     * embeddings (dict): word embeddings with keys.
     * dim (int): final dimension after reduction.
     * t_dim (int): if not none, embeddings are compressed to t_dim before tsne.
+    * t_num (int): maximum number of datapoints for T-SNE.
+    * verbose: whether to display prints.
     """
 
     # Define dimension reduction algorithms
-    pca = PCA(n_components=dim)
-    pca_tsne = PCA(n_components=t_dim)
-    tsne = TSNE(n_components=dim, verbose=verbose)
+    pca = PCA(n_components=dim, whiten=True)
+    pca_tsne = PCA(n_components=t_dim, whiten=True)
+    tsne = TSNE(n_components=dim, verbose=verbose, n_iter=10000, perplexity=10)
 
     # Reduce dimensions with PCA and TSNE
     vprint("Reducing dimensions with PCA...", verbose)

@@ -39,7 +39,7 @@ def main(opt):
             nouns = f.read().split()
 
         # Return an embedding matrix ordered as the nouns list
-        deps_nouns = np.array([deps[noun] for noun in nouns]) 
+        deps_nouns = np.array([deps[noun] for noun in nouns])
         print(deps_nouns.shape)
         print(deps_nouns[1,:10], deps_nouns[2,:10])
 
@@ -59,6 +59,11 @@ def main(opt):
             visualize_embeddings_3d(tsne, tsne_labels, "TSNE reduced embeddings.", opt.tsne_num)
         else:
             print("Cannot visualize in {} dimensions.".format(opt.dim))
+
+        # Qualitative
+        for i in range(opt.k):
+            print("Cluster {}: {}".format(i, [nouns[j] for j in list(np.argwhere(tsne_labels == i).flatten())]))
+
 
 
 
