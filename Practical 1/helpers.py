@@ -153,17 +153,17 @@ def visualize_embeddings_2d(embeddings, labels, title, num):
     """
     Visualize 2-D compressed embeddings.
     """
-    plt.scatter(embeddings[:num, 0], embeddings[:num, 1], c=labels.astype(float))
+    plt.scatter(embeddings[:num, 0], embeddings[:num, 1], c=labels[:num].astype(float))
     plt.xlabel("dim_1")
     plt.ylabel("dim_2")
     plt.title(title)
     plt.show()
-    
+
 
 def visualize_embeddings_3d(embeddings, labels, title, num):
     fig = plt.figure(figsize=(4,3))
     ax = Axes3D(fig, rect=[0, 0, .95, 1], elev=48, azim=134)
-    ax.scatter(embeddings[:num, 0], embeddings[:num, 1], embeddings[:num, 2], c=labels.astype(float))
+    ax.scatter(embeddings[:num, 0], embeddings[:num, 1], embeddings[:num, 2], c=labels[:num].astype(float))
     ax.set_xlabel("dim_1")
     ax.set_ylabel("dim_2")
     ax.set_zlabel("dim_3")

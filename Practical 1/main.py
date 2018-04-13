@@ -39,8 +39,9 @@ def main(opt):
             nouns = f.read().split()
 
         # Return an embedding matrix ordered as the nouns list
-        deps_nouns = np.array([deps[noun] for noun in nouns])
+        deps_nouns = np.array([deps[noun] for noun in nouns]) 
         print(deps_nouns.shape)
+        print(deps_nouns[1,:10], deps_nouns[2,:10])
 
         # Reduce dimensions of deps
         pca, tsne = reduce_dimensions(deps_nouns, opt.dim, 50, opt.tsne_num, True)
