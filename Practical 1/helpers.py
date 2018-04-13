@@ -4,6 +4,7 @@ A file for all our (helper) functions.
 import numpy as np
 from scipy.spatial.distance import cosine
 from scipy.stats import pearsonr, spearmanr
+from collections import defaultdict
 
 
 def load_embeddings(path):

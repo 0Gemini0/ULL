@@ -7,21 +7,27 @@ from helpers import load_embeddings, get_cosine, get_correlation, retrieve_SIMLE
 
 
 def main():
-    # Load word embeddings into dictionaries
-    deps = load_embeddings("Embeddings/deps.words")
-    bow2 = load_embeddings("Embeddings/bow2.words")
-    bow5 = load_embeddings("Embeddings/bow5.words")
 
-    # Load similarity dataset into dictionaries
-    simlex = retrieve_SIMLEX999_data_dict("Similarities/SimLex-999.txt")
-    men = retrieve_MEN_data_dict('Similarities/MEN_dataset_natural_form_full')
+    exercise = 3
 
-    # Test with cosine, pearson, spearman, simlex, MEN
-    p_sim, s_sim = compute_correlations([deps, bow2, bow5], simlex)
-    p_men, s_men = compute_correlations([deps, bow2, bow5], men)
+    if (exercise == 3):
+        # Load word embeddings into dictionaries
+        deps = load_embeddings("Embeddings/deps.words")
+        bow2 = load_embeddings("Embeddings/bow2.words")
+        bow5 = load_embeddings("Embeddings/bow5.words")
 
-    print("pearson: {}, spearman: {} for SimLex".format(p_sim, s_sim))
-    print("pearson: {}, spearman: {} for MEN".format(p_men, s_men))
+        # Load similarity dataset into dictionaries
+        simlex = retrieve_SIMLEX999_data_dict("Similarities/SimLex-999.txt")
+        men = retrieve_MEN_data_dict('Similarities/MEN_dataset_natural_form_full')
+
+        # Test with cosine, pearson, spearman, simlex, MEN
+        p_sim, s_sim = compute_correlations([deps, bow2, bow5], simlex)
+        p_men, s_men = compute_correlations([deps, bow2, bow5], men)
+
+        print("pearson: {}, spearman: {} for SimLex".format(p_sim, s_sim))
+        print("pearson: {}, spearman: {} for MEN".format(p_men, s_men))
+
+    elif (exercise == 2):
 
 
 if __name__ == '__main__':
