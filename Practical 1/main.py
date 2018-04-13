@@ -6,7 +6,7 @@ This file will contain the main script.
 import numpy as np
 from settings import Settings
 
-from helpers import load_embeddings, get_cosine, get_correlation, retrieve_SIMLEX999_data_dict, retrieve_MEN_data_dict, compute_correlations
+from helpers import load_embeddings, get_cosine, get_correlation, retrieve_SIMLEX999_data_dict, retrieve_MEN_data_dict, compute_correlations, reduce_dimensions, visualize_embeddings_2d
 
 
 def main(opt):
@@ -32,6 +32,16 @@ def main(opt):
 
     elif (opt.exercise == 4):
         pass
+
+    elif (opt.exercise == 5):
+        # Reduce dimensions of deps
+        pca, tsne = reduce_dimensions(deps, 2, 50, True)
+
+        # Visualize
+        visualize_embeddings_2d(pca, "PCA reduced embeddings.", 1000)
+        visualize_embeddings_2d(tsne, "TSNE reduced embeddings.", 1000)
+
+
 
 
 if __name__ == '__main__':

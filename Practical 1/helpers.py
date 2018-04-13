@@ -11,15 +11,15 @@ from plotnine import *
 from plotnine.data import *
 
 
-def load_embeddings(path):
+def load_embeddings(path, verbose=True):
     """Loads a file of word embeddings stored with a single embedding per line"""
-    print("Loading {}...".format(path.split("/")[-1]))
+    vprint("Loading {}...".format(path.split("/")[-1]), verbose)
     words = dict()
     with open(path, 'r', encoding='utf8') as f:
         for line in f:
             word = line.split()
             words[word[0]] = np.array(word[1:]).astype(np.float32)
-    print("Done")
+    vprint("Done", verbose)
     return words
 
 
@@ -119,7 +119,7 @@ def retrieve_word_analogy_data_dict (path_to_data):
     return data_required
 
 
-def reduce_dimensions(embeddings, dim, t_dim=None, verbose=False):
+def reduce_dimensions(embeddings, dim, t_dim=None, verbose=True):
     """
     Reduce the dimensions of word embeddings with PCA and TSNE
     Args:
@@ -129,7 +129,7 @@ def reduce_dimensions(embeddings, dim, t_dim=None, verbose=False):
     """
 
     # Unpack embeddings from dictionary
-    embeddings = np.array(embeddings.values())
+    embeddings = np.array(list(embeddings.values()))
 
     # Define dimension reduction algorithms
     pca = PCA(n_components=dim)
@@ -140,12 +140,13 @@ def reduce_dimensions(embeddings, dim, t_dim=None, verbose=False):
     vprint("Reducing dimensions with PCA...", verbose)
     pca_clusters = pca.fit_transform(embeddings)
     if t_dim is not None:
-        vprint("Pre-reducing dimensions for TSNE...")
+        vprint("Pre-reducing dimensions for TSNE...", verbose)
         tsne_pre_clusters = pca_tsne.fit_transform(embeddings)
     else:
         tsne_pre_clusters = embeddings
-    vprint("Reducing dimensions with TSNE...")
+    vprint("Reducing dimensions with TSNE...", verbose)
     tsne_clusters = tsne.fit_transform(tsne_pre_clusters)
+    vprint("Done", verbose)
 
     return pca_clusters, tsne_clusters
 
@@ -160,6 +161,6 @@ def visualize_embeddings_2d(compressed_embeddings, title, num):
     + ggtitle(title))
 
 
-def vprint(message, verbose):
+def vprint(message, verbose=True):
     if verbose:
         print(message)
