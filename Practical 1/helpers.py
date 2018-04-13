@@ -7,8 +7,9 @@ from scipy.stats import pearsonr, spearmanr
 from collections import defaultdict
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-from plotnine import *
-from plotnine.data import *
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 
 def load_embeddings(path, verbose=True):
@@ -119,7 +120,7 @@ def retrieve_word_analogy_data_dict (path_to_data):
     return data_required
 
 
-def reduce_dimensions(embeddings, dim, t_dim=None, verbose=True):
+def reduce_dimensions(embeddings, dim, t_dim=None, t_num=5000, verbose=True):
     """
     Reduce the dimensions of word embeddings with PCA and TSNE
     Args:
@@ -128,13 +129,10 @@ def reduce_dimensions(embeddings, dim, t_dim=None, verbose=True):
     * t_dim (int): if not none, embeddings are compressed to t_dim before tsne.
     """
 
-    # Unpack embeddings from dictionary
-    embeddings = np.array(list(embeddings.values()))
-
     # Define dimension reduction algorithms
     pca = PCA(n_components=dim)
     pca_tsne = PCA(n_components=t_dim)
-    tsne = TSNE(n_components=dim)
+    tsne = TSNE(n_components=dim, verbose=verbose)
 
     # Reduce dimensions with PCA and TSNE
     vprint("Reducing dimensions with PCA...", verbose)
@@ -145,20 +143,42 @@ def reduce_dimensions(embeddings, dim, t_dim=None, verbose=True):
     else:
         tsne_pre_clusters = embeddings
     vprint("Reducing dimensions with TSNE...", verbose)
-    tsne_clusters = tsne.fit_transform(tsne_pre_clusters)
+    tsne_clusters = tsne.fit_transform(tsne_pre_clusters[:t_num, :])
     vprint("Done", verbose)
 
     return pca_clusters, tsne_clusters
 
 
-def visualize_embeddings_2d(compressed_embeddings, title, num):
+def visualize_embeddings_2d(embeddings, labels, title, num):
     """
     Visualize 2-D compressed embeddings.
     """
-    (ggplot(compressed_embeddings[num, :], aes('dim_1', 'dim_2'))
-    + geom_point(size=75, alpha=0.8)
-    + theme_xkcd()
-    + ggtitle(title))
+    plt.scatter(embeddings[:num, 0], embeddings[:num, 1], c=labels.astype(float))
+    plt.xlabel("dim_1")
+    plt.ylabel("dim_2")
+    plt.title(title)
+    plt.show()
+    
+
+def visualize_embeddings_3d(embeddings, labels, title, num):
+    fig = plt.figure(figsize=(4,3))
+    ax = Axes3D(fig, rect=[0, 0, .95, 1], elev=48, azim=134)
+    ax.scatter(embeddings[:num, 0], embeddings[:num, 1], embeddings[:num, 2], c=labels.astype(float))
+    ax.set_xlabel("dim_1")
+    ax.set_ylabel("dim_2")
+    ax.set_zlabel("dim_3")
+    ax.set_title(title)
+
+    plt.show()
+
+
+def cluster(embeddings, k):
+    """
+    Cluster a group of nouns based on their embeddings.
+    """
+    kmeans = KMeans(n_clusters=k, random_state=0)
+    labels = kmeans.fit_predict(embeddings)
+    return labels
 
 
 def vprint(message, verbose=True):

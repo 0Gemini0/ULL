@@ -6,15 +6,15 @@ This file will contain the main script.
 import numpy as np
 from settings import Settings
 
-from helpers import load_embeddings, get_cosine, get_correlation, retrieve_SIMLEX999_data_dict, retrieve_MEN_data_dict, compute_correlations, reduce_dimensions, visualize_embeddings_2d
+from helpers import load_embeddings, get_cosine, get_correlation, retrieve_SIMLEX999_data_dict, retrieve_MEN_data_dict, compute_correlations, reduce_dimensions, visualize_embeddings_2d, visualize_embeddings_3d, cluster
 
 
 def main(opt):
 
     # Load word embeddings into dictionaries
     deps = load_embeddings("Embeddings/deps.words")
-    bow2 = load_embeddings("Embeddings/bow2.words")
-    bow5 = load_embeddings("Embeddings/bow5.words")
+    # bow2 = load_embeddings("Embeddings/bow2.words")
+    # bow5 = load_embeddings("Embeddings/bow5.words")
 
 
     if (opt.exercise == 3):
@@ -34,12 +34,30 @@ def main(opt):
         pass
 
     elif (opt.exercise == 5):
+        # Load nouns
+        with open(opt.nouns, 'r', encoding='utf8') as f:
+            nouns = f.read().split()
+
+        # Return an embedding matrix ordered as the nouns list
+        deps_nouns = np.array([deps[noun] for noun in nouns])
+        print(deps_nouns.shape)
+
         # Reduce dimensions of deps
-        pca, tsne = reduce_dimensions(deps, 2, 50, True)
+        pca, tsne = reduce_dimensions(deps_nouns, opt.dim, 50, opt.tsne_num, True)
+
+        # K-means
+        pca_labels = cluster(pca, k = opt.k)
+        tsne_labels = cluster(tsne, k=opt.k)
 
         # Visualize
-        visualize_embeddings_2d(pca, "PCA reduced embeddings.", 1000)
-        visualize_embeddings_2d(tsne, "TSNE reduced embeddings.", 1000)
+        if opt.dim == 2:
+            visualize_embeddings_2d(pca, pca_labels, "PCA reduced embeddings.", opt.tsne_num)
+            visualize_embeddings_2d(tsne, tsne_labels, "TSNE reduced embeddings.", opt.tsne_num)
+        elif opt.dim == 3:
+            visualize_embeddings_3d(pca, pca_labels, "PCA reduced embeddings.", opt.tsne_num)
+            visualize_embeddings_3d(tsne, tsne_labels, "TSNE reduced embeddings.", opt.tsne_num)
+        else:
+            print("Cannot visualize in {} dimensions.".format(opt.dim))
 
 
 
