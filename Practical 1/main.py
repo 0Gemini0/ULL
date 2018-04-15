@@ -8,6 +8,8 @@ from settings import Settings
 
 from helpers import load_embeddings
 from helpers import retrieve_SIMLEX999_data_dict, retrieve_MEN_data_dict, compute_correlations
+from helpers import retrieve_word_analogy_data_dict, normalised_word_embeddings_data
+from helpers import create_bStars_preds_data, compute_accuracy_and_MRR
 from helpers import reduce_dimensions, visualize_embeddings, cluster, save_clusters
 
 def main(opt):
@@ -17,7 +19,7 @@ def main(opt):
     bow2 = load_embeddings("Embeddings/bow2.words")
     bow5 = load_embeddings("Embeddings/bow5.words")
 
-    if (opt.exercise == 3 | opt.exercise == 1):
+    if (opt.exercise == 3 or opt.exercise == 1):
         # Load similarity dataset into dictionaries
         simlex = retrieve_SIMLEX999_data_dict("Similarities/SimLex-999.txt")
         men = retrieve_MEN_data_dict('Similarities/MEN_dataset_natural_form_full')
@@ -29,8 +31,27 @@ def main(opt):
         print("pearson: {}, spearman: {} for SimLex".format(p_sim, s_sim))
         print("pearson: {}, spearman: {} for MEN".format(p_men, s_men))
 
-    elif (opt.exercise == 4 | opt.exercise == 1):
-        pass
+    elif (opt.exercise == 4 or opt.exercise == 1):
+        word_analogy_data = retrieve_word_analogy_data_dict("word-analogy.txt", lowercase=False)
+        datasets_names = ["DEPS", "BOW2", "BOW5"]
+        datasets = [deps, bow2, bow5]
+        # datasets = [deps]
+
+        for i, dataset in enumerate(datasets):
+            print("\nCurrently working on dataset: " + datasets_names[i] + ".")
+
+            normalised_dataset_data = normalised_word_embeddings_data(dataset)
+            bStars_preds_data = create_bStars_preds_data(normalised_dataset_data[0], word_analogy_data)
+
+            inner_products = np.dot(normalised_dataset_data[2], bStars_preds_data[1])
+
+            acc_f, mrr_f = compute_accuracy_and_MRR(bStars_preds_data[0], normalised_dataset_data[1], inner_products, False)
+            acc_t, mrr_t = compute_accuracy_and_MRR(bStars_preds_data[0], normalised_dataset_data[1], inner_products, True)
+
+            print("\nDataset: " + datasets_names[i] + " ||| " +
+                  "Accuracy = " + "{:3.2f}".format(acc_t) + "% (" + "{:3.2f}".format(acc_f) + "%) ||| " +
+                  "MRR = " + "{:.2f}".format(mrr_t) + " (" + "{:.2f}".format(mrr_f) + ")" +
+                  " ||| Total number of queries: " + str(len(bStars_preds_data[0])) + "\n\n\n")
 
     elif (opt.exercise == 5 or opt.exercise == 1):
         # Load nouns

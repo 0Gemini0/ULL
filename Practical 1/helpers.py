@@ -109,7 +109,7 @@ def retrieve_MEN_data_dict(path_to_data):
     return data_required
 
 
-def retrieve_word_analogy_data_dict (path_to_data):
+def retrieve_word_analogy_data_dict (path_to_data, lowercase=False):
     #################################
     """Loads the word analogy data"""
     #################################
@@ -118,15 +118,114 @@ def retrieve_word_analogy_data_dict (path_to_data):
     with open(path_to_data, "r") as f:
         data_word_analogy = f.readlines()
 
+    def l(string):
+        return string.lower()
+
     """Creates a dict with a_a* as keys and [b b*] as values"""
     data_required = defaultdict(lambda: [])
     for line in data_word_analogy[1:]:
         if(line[0] is not ":"):
             line_contents = line.split(" ")
-            data_required[line_contents[0] + "_" + line_contents[1]].append([line_contents[2], line_contents[3][:-1]])
+            if (lowercase):
+                data_required[l(line_contents[0]) + "_" + l(line_contents[1])].append([l(line_contents[2]), l(line_contents[3][:-1])])
+            else:
+                data_required[line_contents[0] + "_" + line_contents[1]].append([line_contents[2], line_contents[3][:-1]])
 
     return data_required
 
+
+def normalise_array(array):
+    return np.divide(array, np.linalg.norm(array, 1))
+
+def normalised_word_embeddings_data(dataset):
+
+    normalised_dataset = {}
+    word_index_map = []
+    data_matrix = []
+
+    number_of_keys = len(list(dataset.keys()))
+
+    for i, word in enumerate(dataset):
+        print("\rNormalising embedding data: " + "{:3.2f}".format(100 * (i + 1.0) / number_of_keys) +
+              "% completed.", end="", flush=True)
+
+        normalised_array = normalise_array(dataset[word])
+        normalised_dataset[word] = normalised_array
+        word_index_map.append(word)
+        data_matrix.append(normalised_array)
+    print()
+
+    return normalised_dataset, word_index_map, np.array(data_matrix)
+
+
+def create_bStars_preds_data(dataset, word_analogy_data):
+
+    target_words = []
+    bStars_preds_matrix = []
+
+    number_of_keys = len(list(word_analogy_data.keys()))
+
+    for j, a_aStar in enumerate(word_analogy_data):
+        print("\rComputing estimated b* vectors matrix: " + "{:3.2f}".format(100 * (j + 1.0) / number_of_keys) +
+              "% completed.", end="", flush=True)
+
+        a, aStar = a_aStar.split("_")
+
+        if (a in dataset and aStar in dataset):
+            for b_bStar in word_analogy_data[a_aStar]:
+                b, bStar = b_bStar
+
+                if (b in dataset and bStar in dataset):
+                    target_words.append(b_bStar)
+                    bStar_pred = normalise_array(dataset[aStar] - dataset[a] + dataset[b])
+                    bStars_preds_matrix.append(bStar_pred)
+    print()
+
+    return target_words, np.transpose(np.array(bStars_preds_matrix))
+
+
+def compute_accuracy_and_MRR(target_pairs, word_index_map, inner_products, ignore_b=False):
+
+    number_of_queries = float(len(target_pairs))
+    correct_predictions = 0.0
+    cumulative_reciprocal_rank = 0.0
+
+    for i, target_pair in enumerate(target_pairs):
+        if (ignore_b):
+            print("\rComputing predictions (ignoring b): " + "{:3.2f}".format(100 * (i + 1.0) / len(target_pairs)) +
+                  "% completed.", end="", flush=True)
+        else:
+            print("\rComputing predictions (NOT ignoring b): " + "{:3.2f}".format(100 * (i + 1.0) / len(target_pairs)) +
+                  "% completed.", end="", flush=True)
+
+        b, bStar = target_pair
+        ordered_indices = np.argsort(-inner_products[:, i])
+
+        if (ignore_b):
+            if (b != word_index_map[ordered_indices[0]]):
+                if (bStar == word_index_map[ordered_indices[0]]):
+                    correct_predictions += 1
+            else:
+                if (bStar == word_index_map[ordered_indices[1]]):
+                    correct_predictions += 1
+
+            rank = 0
+            for index in ordered_indices:
+                if (b != word_index_map[index]):
+                    rank += 1
+                    if (bStar == word_index_map[index]):
+                        cumulative_reciprocal_rank += 1.0/rank
+                        break
+        else:
+            if (bStar == word_index_map[ordered_indices[0]]):
+                correct_predictions += 1
+
+            for rank, index in enumerate(ordered_indices):
+                if (bStar == word_index_map[index]):
+                    cumulative_reciprocal_rank += 1.0/(rank+1)
+                    break
+    print()
+    return 100 * correct_predictions / number_of_queries, cumulative_reciprocal_rank / number_of_queries
 
 def reduce_dimensions(embeddings, dim, mode, verbose, t_dim=50, t_num=5000):
     """
