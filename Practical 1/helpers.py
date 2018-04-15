@@ -256,8 +256,8 @@ def save_clusters(nouns, labels, path, names):
 
     for label, name in zip(labels, names):
         with open(osp.join(path, name), 'w', encoding='utf8') as f:
-            for i in range(max(label)):
-                f.write("Cluster {}: {}".format(i, [nouns[j] for j in list(np.argwhere(label == i).flatten())]))
+            for i in range(max(label) + 1):
+                f.write("Cluster {}: {}\n".format(i, [nouns[j] for j in list(np.argwhere(label == i).flatten())]))
 
 
 def vprint(message, verbose=True):

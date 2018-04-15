@@ -12,7 +12,7 @@ from helpers import reduce_dimensions, visualize_embeddings, cluster, save_clust
 
 def main(opt):
 
-    # Load word embeddings into dictionaries
+    # # Load word embeddings into dictionaries
     deps = load_embeddings("Embeddings/deps.words")
     bow2 = load_embeddings("Embeddings/bow2.words")
     bow5 = load_embeddings("Embeddings/bow5.words")
@@ -58,7 +58,7 @@ def main(opt):
                             opt.viz_num, opt.dim, opt.verbose)
 
         # Qualitative
-        save_clusters(labels, nouns, opt.out, ['deps_clusters.txt', 'bow2_cluster.txt', 'bow5_cluster.txt'])
+        save_clusters(nouns, labels, opt.out, ['deps_clusters.txt', 'bow2_cluster.txt', 'bow5_cluster.txt'])
 
 
 if __name__ == '__main__':
