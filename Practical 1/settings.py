@@ -31,7 +31,7 @@ class Settings:
                         help='Pre-reduce embeddings to this dimension before T-SNE.')
     parser.add_argument('--k', type=int, default=30,
                         help='Number of K-Means clusters.')
-    parser.add_argument('--eps', type=float, default=0.3,
+    parser.add_argument('--eps', type=float, default=0.35,
                         help='eps parameter for DBSCAN.')
     parser.add_argument('--min_samples', type=int, default=2,
                         help='min_samples parameter for DBSCAN.')

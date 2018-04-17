@@ -97,7 +97,7 @@ def main(opt):
                              opt.viz_num, opt.dim, opt.verbose)
 
         # Qualitative
-        save_clusters(nouns, labels, opt.out, ['deps_clusters.txt', 'bow2_clusters.txt', 'bow5_clusters.txt'])
+        save_clusters(nouns, labels, opt.out_path, ['deps_clusters.txt', 'bow2_clusters.txt', 'bow5_clusters.txt'])
 
 
 if __name__ == '__main__':
