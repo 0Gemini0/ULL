@@ -285,9 +285,6 @@ def visualize_embeddings(embeddings, labels, titles, num, dim, verbose):
         labels = [np.ones(num)] * len(embeddings)
     for embedding, label, title in zip(embeddings, labels, titles):
         if dim == 2:
-            print(embedding.shape)
-            print(label.shape)
-            print(title)
             visualize_embeddings_2d(embedding, label, title, num)
         elif dim == 3:
             visualize_embeddings_3d(embedding, label, title, num)

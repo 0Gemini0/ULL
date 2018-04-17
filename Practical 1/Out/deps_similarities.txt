@@ -1,0 +1,43 @@
+Top 20 most similar pairs on SimLex with deps embeddings.
+actress_actor: 0.9105532765388489
+south_north: 0.902072548866272
+archbishop_bishop: 0.8718477487564087
+delightful_cheerful: 0.8533453941345215
+movie_film: 0.8522853255271912
+inexpensive_cheap: 0.8390688896179199
+vanish_disappear: 0.8381712436676025
+encourage_discourage: 0.8376796245574951
+winter_summer: 0.8361625671386719
+inform_notify: 0.8246616125106812
+roam_wander: 0.8227999210357666
+achieve_accomplish: 0.8218399882316589
+analyze_evaluate: 0.8208813071250916
+large_huge: 0.813946008682251
+investigate_examine: 0.8095057010650635
+delightful_wonderful: 0.8026646971702576
+elbow_ankle: 0.8009606599807739
+inspect_examine: 0.7996158599853516
+acquire_obtain: 0.7994700074195862
+uncle_aunt: 0.7990937232971191
+
+Top 20 most similar pairs on MEN with deps embeddings.
+amphibians_reptiles: 0.8969464302062988
+mammals_reptiles: 0.8894047141075134
+boys_girls: 0.8711636662483215
+amphibians_mammals: 0.8684099912643433
+carrots_potatoes: 0.8412549495697021
+daughter_son: 0.8392941951751709
+mammals_rodents: 0.8367034792900085
+summer_winter: 0.8361625671386719
+bicycle_bike: 0.8308699727058411
+gold_silver: 0.8292441368103027
+dragonfly_hummingbird: 0.8262203931808472
+evening_morning: 0.8211348056793213
+insects_rodents: 0.8142179846763611
+birds_mammals: 0.8065972328186035
+cute_sexy: 0.8013734817504883
+diner_restaurant: 0.7987526655197144
+harbor_harbour: 0.7986127138137817
+amphibians_birds: 0.7984967231750488
+bracelet_necklace: 0.7970897555351257
+cafe_restaurant: 0.792730987071991

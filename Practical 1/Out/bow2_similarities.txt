@@ -1,0 +1,43 @@
+Top 20 most similar pairs on SimLex with bow2 embeddings.
+south_north: 0.829216480255127
+sheep_cattle: 0.828901469707489
+actress_actor: 0.8201236724853516
+movie_film: 0.8166179060935974
+archbishop_bishop: 0.810659646987915
+analyze_evaluate: 0.8008913397789001
+large_huge: 0.7825265526771545
+investigate_examine: 0.7719370722770691
+encourage_discourage: 0.7654898166656494
+protect_defend: 0.7646061182022095
+winter_summer: 0.7631800174713135
+acquire_obtain: 0.7598431706428528
+appoint_elect: 0.7559957504272461
+vanish_disappear: 0.7526048421859741
+frustration_anger: 0.7473912835121155
+clarify_explain: 0.7469887137413025
+inform_notify: 0.7459118366241455
+achieve_accomplish: 0.7412668466567993
+accept_acknowledge: 0.7279272079467773
+locate_find: 0.7264368534088135
+
+Top 20 most similar pairs on MEN with bow2 embeddings.
+amphibians_reptiles: 0.869317889213562
+boys_girls: 0.8294216394424438
+cattle_sheep: 0.828901469707489
+mammals_reptiles: 0.8148177862167358
+carrots_potatoes: 0.8127261400222778
+bicycle_bike: 0.810234785079956
+gold_silver: 0.7931052446365356
+mammals_rodents: 0.7869629859924316
+amphibians_mammals: 0.7770292162895203
+goats_sheep: 0.7743425965309143
+beef_meat: 0.7719505429267883
+birds_mammals: 0.7680258750915527
+summer_winter: 0.7631800174713135
+daughter_son: 0.7479845285415649
+town_village: 0.743722140789032
+evening_morning: 0.741891086101532
+reptiles_rodents: 0.73811936378479
+birds_reptiles: 0.7194559574127197
+insects_rodents: 0.7184554934501648
+guitar_piano: 0.7177704572677612

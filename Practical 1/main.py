@@ -34,13 +34,21 @@ def main(opt):
         p_sim, s_sim, top_sim = compute_correlations(embeddings, simlex, opt.N)
         p_men, s_men, top_men = compute_correlations(embeddings, men, opt.N)
 
+        # Print Quantitative results
         for i, name in enumerate(emb_names):
             print("pearson: {}, spearman: {} for SimLex with {} embeddings".format(p_sim[i], s_sim[i], name))
             print("pearson: {}, spearman: {} for MEN with {} embeddings".format(p_men[i], s_men[i], name))
 
+        # Write qualitative results to file
         for i, name in enumerate(emb_names):
-            print("Top {} most similar pairs on SimLex with {} embeddings.\n {}".format(opt.N, name, top_sim[i]))
-            print("Top {} most similar pairs on MEN with {} embeddings.\n {}".format(opt.N, name, top_men[i]))
+            with open(osp.join(opt.out_path, name+"_similarities.txt"), 'w', encoding='utf8') as f:
+                f.write("Top {} most similar pairs on SimLex with {} embeddings.\n".format(opt.N, name))
+                for pair in top_sim[i]:
+                    f.write("{}: {}\n".format(pair[1], pair[0]))
+                f.write("\n")
+                f.write("Top {} most similar pairs on MEN with {} embeddings.\n".format(opt.N, name))
+                for pair in top_men[i]:
+                    f.write("{}: {}\n".format(pair[1], pair[0]))
 
     elif (opt.exercise == 4 or opt.exercise == 1):
         word_analogy_data = retrieve_word_analogy_data_dict(

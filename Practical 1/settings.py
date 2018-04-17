@@ -19,7 +19,7 @@ class Settings:
                         help='Which excercise to run. Choose 3, 4, 5 or 1 for all.')
 
     # Excercise 3
-    parser.add_argument('--N', type=int, default=10,
+    parser.add_argument('--N', type=int, default=20,
                         help='Display top N most cosine word pairs on task 3.')
 
     # Excercise 4
@@ -29,11 +29,11 @@ class Settings:
                         help='Max number of embeddings to input T-SNE.')
     parser.add_argument('--tsne_dim', type=int, default=50,
                         help='Pre-reduce embeddings to this dimension before T-SNE.')
-    parser.add_argument('--k', type=int, default=2,
+    parser.add_argument('--k', type=int, default=30,
                         help='Number of K-Means clusters.')
     parser.add_argument('--eps', type=float, default=0.3,
                         help='eps parameter for DBSCAN.')
-    parser.add_argument('--min_samples', type=int, default=4,
+    parser.add_argument('--min_samples', type=int, default=2,
                         help='min_samples parameter for DBSCAN.')
     parser.add_argument('--red_mode', type=str, default='tsne',
                         help="Type of dimensionality reduction, [pca, tsne]")
