@@ -52,25 +52,35 @@ def main(opt):
 
     elif (opt.exercise == 4 or opt.exercise == 1):
         word_analogy_data = retrieve_word_analogy_data_dict(
-            osp.join(opt.data_path, "word-analogy.txt"), lowercase=False)
+            osp.join(opt.data_path, "word-analogy.txt"), opt.split_datase, opt.lowercase)
+
+        # random_examples = retrieve_random_examples(word_analogy_data, opt.extract_N_examples)
 
         for i, dataset in enumerate(embeddings):
             print("\nCurrently working on embedding: " + emb_names[i] + ".")
 
+            acc_f, mrr_f, acc_t, mrr_t, number_of_queries = [0, 0, 0, 0, 0]
+
             normalised_dataset_data = normalised_word_embeddings_data(dataset)
-            bStars_preds_data = create_bStars_preds_data(normalised_dataset_data[0], word_analogy_data)
 
-            inner_products = np.dot(normalised_dataset_data[2], bStars_preds_data[1])
+            for j, subset in enumerate(word_analogy_data):
 
-            acc_f, mrr_f = compute_accuracy_and_MRR(
-                bStars_preds_data[0], normalised_dataset_data[1], inner_products, False)
-            acc_t, mrr_t = compute_accuracy_and_MRR(
-                bStars_preds_data[0], normalised_dataset_data[1], inner_products, True)
+                bStars_preds_data, number_of_queries = create_bStars_preds_data(normalised_dataset_data[0],
+                                                                                subset, number_of_queries)
+
+                inner_products = np.dot(normalised_dataset_data[2], bStars_preds_data[1])
+
+                acc_f, mrr_f = compute_accuracy_and_MRR(bStars_preds_data[0], normalised_dataset_data[1],
+                                                        inner_products, acc_f, mrr_f, False)
+                acc_t, mrr_t = compute_accuracy_and_MRR(bStars_preds_data[0], normalised_dataset_data[1],
+                                                        inner_products, acc_t, mrr_t, True)
 
             print("\nEmbedding: " + emb_names[i] + " ||| " +
-                  "Accuracy = " + "{:3.2f}".format(acc_t) + "% (" + "{:3.2f}".format(acc_f) + "%) ||| " +
-                  "MRR = " + "{:.2f}".format(mrr_t) + " (" + "{:.2f}".format(mrr_f) + ")" +
-                  " ||| Total number of queries: " + str(len(bStars_preds_data[0])) + "\n\n\n")
+                  "Accuracy = " + "{:3.2f}".format(100*acc_t/number_of_queries) + "% (" +
+                  "{:3.2f}".format(100*acc_f/number_of_queries) + "%) ||| " +
+                  "MRR = " + "{:.2f}".format(mrr_t/number_of_queries) + " (" +
+                  "{:.2f}".format(mrr_f/number_of_queries) + ")" +
+                  " ||| Total number of queries: " + str(number_of_queries) + "\n\n\n")
 
     elif (opt.exercise == 5 or opt.exercise == 1):
         # Load nouns

@@ -114,7 +114,7 @@ def retrieve_MEN_data_dict(path_to_data):
     return data_required
 
 
-def retrieve_word_analogy_data_dict(path_to_data, lowercase=False):
+def retrieve_word_analogy_data_dict(path_to_data, split, lowercase):
     #################################
     """Loads the word analogy data"""
     #################################
@@ -138,7 +138,25 @@ def retrieve_word_analogy_data_dict(path_to_data, lowercase=False):
                 data_required[line_contents[0] + "_" + line_contents[1]
                               ].append([line_contents[2], line_contents[3][:-1]])
 
-    return data_required
+    keys = list(data_required.keys())
+    number_main_analogies = len(keys)
+    size_subsets = number_main_analogies / float(split)
+    data_subsets = []
+    for i in range(split):
+        if (i == split - 1):
+            size_subset = number_main_analogies - (split - 1) * int(size_subsets)
+        else:
+            size_subset = int(size_subsets)
+
+        subset_dict = {}
+        for j, key in enumerate(keys[i * int(size_subsets):i * int(size_subsets) + size_subset]):
+            if (j == size_subset):
+                break
+            subset_dict[key] = data_required.pop(key)
+
+        data_subsets.append(subset_dict)
+
+    return data_subsets
 
 
 def normalise_array(array):
@@ -166,7 +184,10 @@ def normalised_word_embeddings_data(dataset):
     return normalised_dataset, word_index_map, np.array(data_matrix)
 
 
-def create_bStars_preds_data(dataset, word_analogy_data):
+def retrieve_random_examples(word_analogy_data, number_of_examples):
+    raise NotImplementedError
+
+def create_bStars_preds_data(dataset, word_analogy_data, number_of_queries):
 
     target_words = []
     bStars_preds_matrix = []
@@ -187,16 +208,14 @@ def create_bStars_preds_data(dataset, word_analogy_data):
                     target_words.append(b_bStar)
                     bStar_pred = normalise_array(dataset[aStar] - dataset[a] + dataset[b])
                     bStars_preds_matrix.append(bStar_pred)
+
+    number_of_queries += len(target_words)
     print()
 
-    return target_words, np.transpose(np.array(bStars_preds_matrix))
+    return [target_words, np.transpose(np.array(bStars_preds_matrix))], number_of_queries
 
 
-def compute_accuracy_and_MRR(target_pairs, word_index_map, inner_products, ignore_b=False):
-
-    number_of_queries = float(len(target_pairs))
-    correct_predictions = 0.0
-    cumulative_reciprocal_rank = 0.0
+def compute_accuracy_and_MRR(target_pairs, word_index_map, inner_products, acc, mrr, ignore_b=False):
 
     for i, target_pair in enumerate(target_pairs):
         if (ignore_b):
@@ -212,28 +231,28 @@ def compute_accuracy_and_MRR(target_pairs, word_index_map, inner_products, ignor
         if (ignore_b):
             if (b != word_index_map[ordered_indices[0]]):
                 if (bStar == word_index_map[ordered_indices[0]]):
-                    correct_predictions += 1
+                    acc += 1
             else:
                 if (bStar == word_index_map[ordered_indices[1]]):
-                    correct_predictions += 1
+                    acc += 1
 
             rank = 0
             for index in ordered_indices:
                 if (b != word_index_map[index]):
                     rank += 1
                     if (bStar == word_index_map[index]):
-                        cumulative_reciprocal_rank += 1.0/rank
+                        mrr += 1.0/rank
                         break
         else:
             if (bStar == word_index_map[ordered_indices[0]]):
-                correct_predictions += 1
+                acc += 1
 
             for rank, index in enumerate(ordered_indices):
                 if (bStar == word_index_map[index]):
-                    cumulative_reciprocal_rank += 1.0/(rank+1)
+                    mrr += 1.0/(rank+1)
                     break
     print()
-    return 100 * correct_predictions / number_of_queries, cumulative_reciprocal_rank / number_of_queries
+    return acc, mrr
 
 
 def reduce_dimensions(embeddings, dim, mode, verbose, t_dim=50, t_num=5000):
