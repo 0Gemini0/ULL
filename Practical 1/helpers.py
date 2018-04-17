@@ -26,33 +26,38 @@ def load_embeddings(path, verbose=True):
     return words
 
 
-def compute_correlations(embeddings, dataset):
+def compute_correlations(embeddings, dataset, N):
     """
-    Get the correlations between a number of embedding dictionaries and a similarity dataset.
+    Get the correlations between a number of embedding dictionaries and a similarity dataset. The function also returns the top-N cosine scores per embedding set for pairs in the given dataset.
     """
     cosines = [[] for i in range(len(embeddings))]
     scores = []
     pearson = []
     spearman = []
+    pairs = []
+    top = []
     for pair, value in dataset.items():
-        pair = pair.split("_")
+        pair_list = pair.split("_")
         cont = False
         for emb in embeddings:
-            if pair[0] not in emb or pair[1] not in emb:
+            if pair_list[0] not in emb or pair_list[1] not in emb:
                 cont = True
         if cont:
             continue
 
         for i, emb in enumerate(embeddings):
-            cosines[i].append(get_cosine(pair[0], pair[1], emb))
+            cosines[i].append(get_cosine(pair_list[0], pair_list[1], emb))
 
+        # Not quite liking this dictionary unpack, but we need to track the order
+        pairs.append(pair)
         scores.append(value)
 
     for cosine in cosines:
+        top.append(sorted(zip(cosine, pairs), key=lambda cos: cos[0], reverse=True)[:N])
         p_r, s_r = get_correlation(np.array(cosine), np.array(scores))
-        pearson.append(p_r), spearman.append(s_r)
+        pearson.append(p_r[0]), spearman.append(s_r[0])
 
-    return pearson, spearman
+    return pearson, spearman, top
 
 
 def get_cosine(word_1, word_2, embeddings):
@@ -109,7 +114,7 @@ def retrieve_MEN_data_dict(path_to_data):
     return data_required
 
 
-def retrieve_word_analogy_data_dict (path_to_data, lowercase=False):
+def retrieve_word_analogy_data_dict(path_to_data, lowercase=False):
     #################################
     """Loads the word analogy data"""
     #################################
@@ -127,15 +132,18 @@ def retrieve_word_analogy_data_dict (path_to_data, lowercase=False):
         if(line[0] is not ":"):
             line_contents = line.split(" ")
             if (lowercase):
-                data_required[l(line_contents[0]) + "_" + l(line_contents[1])].append([l(line_contents[2]), l(line_contents[3][:-1])])
+                data_required[l(line_contents[0]) + "_" + l(line_contents[1])
+                              ].append([l(line_contents[2]), l(line_contents[3][:-1])])
             else:
-                data_required[line_contents[0] + "_" + line_contents[1]].append([line_contents[2], line_contents[3][:-1]])
+                data_required[line_contents[0] + "_" + line_contents[1]
+                              ].append([line_contents[2], line_contents[3][:-1]])
 
     return data_required
 
 
 def normalise_array(array):
     return np.divide(array, np.linalg.norm(array, 1))
+
 
 def normalised_word_embeddings_data(dataset):
 
@@ -227,6 +235,7 @@ def compute_accuracy_and_MRR(target_pairs, word_index_map, inner_products, ignor
     print()
     return 100 * correct_predictions / number_of_queries, cumulative_reciprocal_rank / number_of_queries
 
+
 def reduce_dimensions(embeddings, dim, mode, verbose, t_dim=50, t_num=5000):
     """
     Reduce the dimensions of word embeddings with PCA and/or TSNE.
@@ -254,7 +263,7 @@ def reduce_dimensions(embeddings, dim, mode, verbose, t_dim=50, t_num=5000):
 def reduce_dimensions_pca(embeddings, dim, verbose):
     pca = PCA(n_components=dim, whiten=True)
     clusters = pca.fit_transform(embeddings)
-    return
+    return clusters
 
 
 def reduce_dimensions_tsne(embeddings, dim, t_dim, verbose):
@@ -301,7 +310,7 @@ def visualize_embeddings_3d(embeddings, labels, title, num):
     """
     Visualize 3-D compressed embeddings.
     """
-    fig = plt.figure(figsize=(4,3))
+    fig = plt.figure(figsize=(4, 3))
     ax = Axes3D(fig, rect=[0, 0, .95, 1], elev=48, azim=134)
     ax.scatter(embeddings[:num, 0], embeddings[:num, 1], embeddings[:num, 2], c=labels[:num].astype(float))
     ax.set_xlabel("dim_1")
@@ -345,6 +354,7 @@ def cluster_density(embeddings, eps, min_samples):
     dbscan = DBSCAN(min_samples=min_samples, eps=eps, metric='cosine')
     labels = dbscan.fit_predict(embeddings)
     return labels
+
 
 def save_clusters(nouns, labels, path, names):
     """
