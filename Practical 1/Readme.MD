@@ -10,6 +10,7 @@ python3 main.py [settings]
 ```
 
 ***Prerequisites***
+
 Package prerequisites:
 ```
 pip install numpy
@@ -37,6 +38,7 @@ The folders containing the embeddings/data can be specified with the following c
 Please correctly specify these based on your file structure via command-line or by changing the defaults in ```settings.py```.
 
 ***Exercise 3***
+
 Run:
 ```
 ./main.py --exercise=3 [settings]
@@ -48,12 +50,14 @@ Relevant settings:
 Running the code using the run command above will result in the pearson/spearman similarity scores to be printed to screen for both Datasets, for the three types of embeddings. The top 10 most similar pairs for each dataset as rated by the various embedding types will also be printed to the screen.
 
 ***Exercise 4***
+
 Run:
 ```
 ./main.py --exercise=4 [settings]
 ```
 
 ***Exercise 5***
+
 Run:
 ```
 ./main.py --exercise=5 [settings]
@@ -72,6 +76,7 @@ Relevant settings:
 The default settings (using the runn command above) will yield the experiments as described in our report. We reduce the nouns to two dimension with T-SNE, pre-reduced to 50 dimensions with PCA, for visualization. Then we perform clustering with DBSCAN (density) to obtain meaningful clusters. The visualizations are shown with the clusters superimposed on them, but note that the clustering has been applied to the unreduced embeddings. After closing the visualizations the clusters for each embedding type will be stored in separate files.
 
 ***Additional Notes***
+
 Run all exercises:
 ```
 ./main.py
