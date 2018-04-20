@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import os
 import os.path as osp
+import random
 
 
 def load_embeddings(path, verbose=True):
@@ -185,7 +186,15 @@ def normalised_word_embeddings_data(dataset):
 
 
 def retrieve_random_examples(word_analogy_data, number_of_examples):
-    raise NotImplementedError
+    number_of_bins = len(word_analogy_data)
+    random_words = defaultdict(lambda: [])
+    for _ in range(number_of_examples):
+        bin = random.randint(0, number_of_bins-1)
+        random_key = random.choice(list(word_analogy_data[bin]))
+        random_words[random_key].append(word_analogy_data[bin][random_key][random.randint(0, len(word_analogy_data[bin][random_key]) - 1)])
+    return random_words
+
+
 
 def create_bStars_preds_data(dataset, word_analogy_data, number_of_queries):
 

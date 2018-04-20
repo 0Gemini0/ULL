@@ -10,7 +10,7 @@ import os.path as osp
 from helpers import load_embeddings
 from helpers import retrieve_SIMLEX999_data_dict, retrieve_MEN_data_dict, compute_correlations
 from helpers import retrieve_word_analogy_data_dict, normalised_word_embeddings_data
-from helpers import create_bStars_preds_data, compute_accuracy_and_MRR
+from helpers import create_bStars_preds_data, compute_accuracy_and_MRR, retrieve_random_examples
 from helpers import reduce_dimensions, visualize_embeddings, cluster, save_clusters
 
 
@@ -24,6 +24,8 @@ def main(opt):
     # Easy iteration and printing
     emb_names = ['deps', 'bow2', 'bow5']
     embeddings = [deps, bow2, bow5]
+    # emb_names = ['deps']
+    # embeddings = [deps]
 
     if (opt.exercise == 3 or opt.exercise == 1):
         # Load similarity dataset into dictionaries
@@ -54,33 +56,46 @@ def main(opt):
         word_analogy_data = retrieve_word_analogy_data_dict(
             osp.join(opt.data_path, "word-analogy.txt"), opt.split_datase, opt.lowercase)
 
-        # random_examples = retrieve_random_examples(word_analogy_data, opt.extract_N_examples)
-
-        for i, dataset in enumerate(embeddings):
-            print("\nCurrently working on embedding: " + emb_names[i] + ".")
-
-            acc_f, mrr_f, acc_t, mrr_t, number_of_queries = [0, 0, 0, 0, 0]
-
-            normalised_dataset_data = normalised_word_embeddings_data(dataset)
-
-            for j, subset in enumerate(word_analogy_data):
-
-                bStars_preds_data, number_of_queries = create_bStars_preds_data(normalised_dataset_data[0],
-                                                                                subset, number_of_queries)
-
+        if (opt.extract_N_examples > 0):
+            random_examples = retrieve_random_examples(word_analogy_data, opt.extract_N_examples)
+            for i, dataset in enumerate(embeddings):
+                print("\nCurrently working on embedding: " + emb_names[i] + ".")
+                normalised_dataset_data = normalised_word_embeddings_data(dataset)
+                bStars_preds_data, _ = create_bStars_preds_data(normalised_dataset_data[0], random_examples, 0)
                 inner_products = np.dot(normalised_dataset_data[2], bStars_preds_data[1])
+                for j, target_pair in enumerate(bStars_preds_data[0]):
+                    indices = np.argsort(-inner_products[:, j])
+                    print("Target pair: " + target_pair[0] + " --> " + target_pair[1] + ". Ordered choices: ", end="")
+                    for index in indices[:15]:
+                        print(normalised_dataset_data[1][index] + ", ", end="")
+                    print()
 
-                acc_f, mrr_f = compute_accuracy_and_MRR(bStars_preds_data[0], normalised_dataset_data[1],
-                                                        inner_products, acc_f, mrr_f, False)
-                acc_t, mrr_t = compute_accuracy_and_MRR(bStars_preds_data[0], normalised_dataset_data[1],
-                                                        inner_products, acc_t, mrr_t, True)
+        else:
+            for i, dataset in enumerate(embeddings):
+                print("\nCurrently working on embedding: " + emb_names[i] + ".")
 
-            print("\nEmbedding: " + emb_names[i] + " ||| " +
-                  "Accuracy = " + "{:3.2f}".format(100*acc_t/number_of_queries) + "% (" +
-                  "{:3.2f}".format(100*acc_f/number_of_queries) + "%) ||| " +
-                  "MRR = " + "{:.2f}".format(mrr_t/number_of_queries) + " (" +
-                  "{:.2f}".format(mrr_f/number_of_queries) + ")" +
-                  " ||| Total number of queries: " + str(number_of_queries) + "\n\n\n")
+                acc_f, mrr_f, acc_t, mrr_t, number_of_queries = [0, 0, 0, 0, 0]
+
+                normalised_dataset_data = normalised_word_embeddings_data(dataset)
+
+                for j, subset in enumerate(word_analogy_data):
+
+                    bStars_preds_data, number_of_queries = create_bStars_preds_data(normalised_dataset_data[0],
+                                                                                    subset, number_of_queries)
+
+                    inner_products = np.dot(normalised_dataset_data[2], bStars_preds_data[1])
+
+                    acc_f, mrr_f = compute_accuracy_and_MRR(bStars_preds_data[0], normalised_dataset_data[1],
+                                                            inner_products, acc_f, mrr_f, False)
+                    acc_t, mrr_t = compute_accuracy_and_MRR(bStars_preds_data[0], normalised_dataset_data[1],
+                                                            inner_products, acc_t, mrr_t, True)
+
+                print("\nEmbedding: " + emb_names[i] + " ||| " +
+                      "Accuracy = " + "{:3.2f}".format(100*acc_t/number_of_queries) + "% (" +
+                      "{:3.2f}".format(100*acc_f/number_of_queries) + "%) ||| " +
+                      "MRR = " + "{:.2f}".format(mrr_t/number_of_queries) + " (" +
+                      "{:.2f}".format(mrr_f/number_of_queries) + ")" +
+                      " ||| Total number of queries: " + str(number_of_queries) + "\n\n\n")
 
     elif (opt.exercise == 5 or opt.exercise == 1):
         # Load nouns
