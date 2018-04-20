@@ -54,7 +54,7 @@ def main(opt):
 
     elif (opt.exercise == 4 or opt.exercise == 1):
         word_analogy_data = retrieve_word_analogy_data_dict(
-            osp.join(opt.data_path, "word-analogy.txt"), opt.split_datase, opt.lowercase)
+            osp.join(opt.data_path, "word-analogy.txt"), opt.split_dataset, opt.lowercase)
 
         if (opt.extract_N_examples > 0):
             random_examples = retrieve_random_examples(word_analogy_data, opt.extract_N_examples)
