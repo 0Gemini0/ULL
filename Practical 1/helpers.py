@@ -191,9 +191,9 @@ def retrieve_random_examples(word_analogy_data, number_of_examples):
     for _ in range(number_of_examples):
         bin = random.randint(0, number_of_bins-1)
         random_key = random.choice(list(word_analogy_data[bin]))
-        random_words[random_key].append(word_analogy_data[bin][random_key][random.randint(0, len(word_analogy_data[bin][random_key]) - 1)])
+        random_words[random_key].append(word_analogy_data[bin][random_key]
+                                        [random.randint(0, len(word_analogy_data[bin][random_key]) - 1)])
     return random_words
-
 
 
 def create_bStars_preds_data(dataset, word_analogy_data, number_of_queries):

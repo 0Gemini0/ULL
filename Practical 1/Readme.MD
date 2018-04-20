@@ -61,7 +61,7 @@ Relevant settings:
 --lowercase: Whether to lowercase the word analogy dataset. 1=True, 0=False.
 --extract_N_examples: Extract random (a : a* :: b : b*) examples to compare throughout the different datasets.
 ```
-Using the run command above will yield the results on the word analogy task as described in our report with b removed as solution, printed to screen. The algorithm is quite memory intensive, so make sure to set split_dataset to a large enough value. We recommend 4 for a 16GB RAM system and 8 for an 8GB system. To obtain scores on some random examples, set extract_N_samples to a value above 0. The full word analogy task will not be run then.
+Using the run command above will yield the results on the word analogy task as described in our report with b removed as solution, printed to screen. The algorithm is quite memory intensive, so make sure to set split_dataset to a large enough value. We recommend at least 4 for a 16GB RAM system and at least 8 for an 8GB system. To obtain scores on some random examples, set extract_N_samples to a value above 0. The full word analogy task will not be run then.
 
 ***Exercise 5***
 
@@ -81,6 +81,7 @@ Relevant settings:
 --tsne_num: maximum number of embeddings to cluster with tsne (for speed).
 ```
 The default settings (using the run command above) will yield the experiments as described in our report. We reduce the nouns to two dimension with T-SNE, pre-reduced to 50 dimensions with PCA, for visualization. Then we perform clustering with DBSCAN (density) to obtain meaningful clusters. The visualizations are shown with the clusters superimposed on them, but note that the clustering has been applied to the unreduced embeddings. After closing the visualizations the clusters for each embedding type will be stored in separate files.
+Other available clustering/reduction modes are K-Means and PCA, but they performed worse in terms of clustering and visualization respectively. Visualization is available in both 2-D and 3-D.
 
 ***Additional Notes***
 

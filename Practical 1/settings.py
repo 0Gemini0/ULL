@@ -3,7 +3,9 @@ from argparse import ArgumentParser
 
 class Settings:
     """Wrapper for argument parser"""
+
     parser = ArgumentParser('Main script settings.')
+
     # Paths
     parser.add_argument('--out_path', type=str, default="./Out",
                         help="Output folder.")
@@ -23,7 +25,7 @@ class Settings:
                         help='Display top N highest cosine similarity word pairs on task 3.')
 
     # Excercise 4
-    parser.add_argument('--split_dataset', type=int, default=4,
+    parser.add_argument('--split_dataset', type=int, default=8,
                         help='Number of subsets into which the word_analogy_dataset will be split,'
                              'so as to fit in memory.')
     parser.add_argument('--lowercase', type=int, default=1,
