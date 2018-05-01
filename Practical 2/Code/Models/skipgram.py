@@ -11,8 +11,8 @@ class SkipGram(nn.Module):
 
     def __init__(self, v_dim, h_dim):
         # Embedding matrices for both context and center words
-        self.center_embedding = nn.Embedding(v_dim, h_dim)
-        self.context_embedding = nn.Embeding(v_dim, h_dim)
+        self.center_embedding = nn.Embedding(v_dim, h_dim, sparse=True)
+        self.context_embedding = nn.Embeding(v_dim, h_dim, sparse=True)
 
     def forward(self, center, pos_c, neg_c):
         # Embed; center and pos_c should be [B x V], neg_c should be [B x K x V]
