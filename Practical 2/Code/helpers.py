@@ -18,7 +18,7 @@ path_to_data = "../Data/Original Data/test_data_file.txt"
 #####################################
 
 
-def line_mutate(line, lowercase, word_count, compute_word_count=True):
+def line_mutate(line, lowercase, dictionary, index_word_map=None, index=None, dict_operation="Word Count"):
     ##############################################################################################################
     """Function to lowercase all words and strip '\r' and '\n' symbols. Also, implicitly counts word frequency."""
     ##############################################################################################################
@@ -31,10 +31,18 @@ def line_mutate(line, lowercase, word_count, compute_word_count=True):
     if (lowercase):
         line = [word.lower() for word in line]
 
-    '''Compute counts for all words in line, if compute_word_count is True.'''
-    if (compute_word_count):
+    '''Compute counts for all words in line.'''
+    if (dict_operation == "Word Count"):
         for word in line:
-            word_count[word] += 1
+            dictionary[word] += 1
+
+    '''Indexes all words in the line (implicitly, in the dataset).'''
+    if (dict_operation == "Word Index"):
+        for word in line:
+            if (word not in dictionary):
+                dictionary[word] = index
+                index_word_map.append(word)
+                index += 1
 
     return line
 
@@ -73,78 +81,38 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
                 new_line += to_UNK_dict[word] + " "
             f.write(new_line[0:-1] + "\n")
 
-
+# TODO: FIX THIS FUNCTION!!!!!!!!!! CURRENTLY NOT WORKING!
 def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, store_sequentially=False):
     ###############################################################################
     """Loads the english side of the dataset corresponding to the provided path."""
     ###############################################################################
 
     '''Load the data.'''
-    with open(path_to_data, "r") as f:
+    with open(path_to_data, "r") as f:  # TODO: Add ', encoding='utf-8''
         data_lines = f.readlines()
 
     '''Apply line_mutate to all lines in the dataset.'''
-    data_lines = [line_mutate(line, lowercase, None, False) for line in data_lines]
+    word_index_map = {}
+    index_word_map = []
+    index = 0
+    data_lines = [line_mutate(line, lowercase, word_index_map, index_word_map, index, "Word Index") for line in data_lines]
 
     '''Compute context (past and future) for each token in the dataset.'''
-    centre_word_context_windows = defaultdict(lambda: [])
+    centre_word_context_windows = defaultdict(lambda: [])  # TODO: Convert into list.
     for line in data_lines:
         for i, word in enumerate(line):
             past_context = []
             future_context = []
             for j in range(max(0, i - window_size), i):  # Compute past context
-                past_context.append(line[j])
-            for j in range(i + 1, min(i + 1 + window_size, len(line))):  # Compute past context
-                future_context.append(line[j])
-            centre_word_context_windows[word].append([past_context, future_context])  # Add past/future context to word
+                past_context.append(word_index_map[line[j]])
+            for j in range(i + 1, min(i + 1 + window_size, len(line))):  # Compute future context
+                future_context.append(word_index_map[line[j]])
+            centre_word_context_windows[word_index_map[word]].append([past_context, future_context])  # Add past/future context to word
 
-
-
-
-
-
-
-# def shit_function():
-#
-#     observed_pairs = []
-#     index = 0
-#     word_index_map = {}
-#     index_word_map = []
-#
-#     '''Register observed pairs and word/index index/word maps.'''
-#     for line in data_lines:  # TODO: add check for stupid lines? Like " * * * ".
-#         line_list = line.split(" ")
-#         line_list[-1] = line_list[-1].rstrip("\n").rstrip("\r")
-#
-#         for i in range(len(line_list) - 1):
-#             if (line_list[i] not in word_index_map):
-#                 word_index_map[line_list[i]] = index
-#                 index_word_map.append(line_list[i])
-#                 index += 1
-#
-#             for j in range(i+1, len(line_list)):
-#                 observed_pairs.append([line_list[i], line_list[j]])
-#                 observed_pairs.append([line_list[j], line_list[i]])
-#
-#         if (line_list[len(line_list) - 1] not in word_index_map):
-#             word_index_map[line_list[len(line_list) - 1]] = index
-#             index_word_map.append(line_list[len(line_list) - 1])
-#             index += 1
-#
-#     print("Observed Pairs: ", observed_pairs)
-#     print("Word Index Map: ", word_index_map)
-#     print("Index Word Map: ", index_word_map)
-#     '''Generate negative pairs.'''
-#     negative_pairs = []
-#     for word in word_index_map:
-#         random_context_words_indices = np.random.randint(0, len(index_word_map), k)
-#         for i in random_context_words_indices:
-#             negative_pairs.append([word, index_word_map[i]])
-#     print("Negative Pairs: ", negative_pairs)
-#
-#     '''Save pre-processed data.'''
-
-
+    print(centre_word_context_windows)
+    print(word_index_map)
+    print(index_word_map)
+preprocess_data_skipgram(path_to_data, 2)
 
 def damned_experimental_subsampler():
     '''This is an experimental "dirty" (as per Omar Levy) subsampler.'''
