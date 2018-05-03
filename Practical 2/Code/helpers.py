@@ -26,23 +26,24 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
     with open(path_to_data, "r", encoding='utf-8') as f:
         data_lines = f.readlines()
 
+    '''Function to lowercase all words and strip '\r' and '\n' symbols. Also, implicitly counts word frequency.'''''
     def line_mutate(line):
         line = line.split(" ")
         line[-1] = line[-1].rstrip("\n").rstrip("\r")
-
         if (lowercase):
             line = [word.lower() for word in line]
-
         for word in line:
             word_count[word] += 1
-
         return line
 
+    '''Apply line mutate to all lines in the dataset.'''
     word_count = defaultdict(lambda: 0)
     data_lines = [line_mutate(line) for line in data_lines]
 
+    '''Order words on their frequency.'''
     ordered_counts = sorted(word_count.items(), key=operator.itemgetter(1), reverse=True)
 
+    '''Specify which words will UNKed and which won't.'''
     to_UNK_dict = {}
     for i, pair in enumerate(ordered_counts):
         if (i <= threshold):
@@ -50,17 +51,13 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
         else:
             to_UNK_dict[pair[0]] = "UNK"
 
+    '''Save the UNKed (on threshold) and lowercased(?) dataset to file.'''
     with open(path_to_data[0:-3] + "_" + str(threshold) + "_" + str(lowercase) + path_to_data[-3:], "w", encoding='utf-8') as f:
         for line in data_lines:
             new_line = ""
             for word in line:
                 new_line += to_UNK_dict[word] + " "
             f.write(new_line[0:-1] + "\n")
-
-
-
-basic_dataset_preprocess(path_to_data)
-
 
 
 def preprocess_data_skipgram(path_to_data, window_size, k=1, store_sequentially=False):
@@ -109,22 +106,6 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, store_sequentially=
     print("Negative Pairs: ", negative_pairs)
 
     '''Save pre-processed data.'''
-
-
-# a = "ajsh\n"
-# b = "ajsh\r\n"
-# c = "ajsh\r"
-# d = "ajsh"
-#
-# print(d.rstrip("\n").rstrip("\r"))
-# print(repr(a))
-# a = a.rstrip("\n")
-# print(repr(a))
-# a = a.rstrip("\r")
-# print(repr(a))
-
-
-# preprocess_data_skipgram(path_to_data, 2)
 
 
 
