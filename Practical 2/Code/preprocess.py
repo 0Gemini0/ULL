@@ -102,7 +102,7 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
             f.write(new_line[0:-1] + "\n")
 
 
-def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, store_sequentially=False):
+def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, store_sequentially=False, pad_index=-1):
     ###############################################################################
     """Loads the english side of the dataset corresponding to the provided path."""
     ###############################################################################
@@ -139,23 +139,29 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
     negative_samples = []
     a = len(data_lines)
     for m, line in enumerate(data_lines):
-        # print('{:2f}'.format(100*(m+1)/a), end="\n", flush=True)
-        '''Compute context (past and future).'''
-        append_time = 0.0
-        sample_time = 0.0
         for i, word in enumerate(line):
+            '''Compute context (past and future).'''
             past_context = []
             future_context = []
             for j in range(max(0, i - window_size), i):  # Compute past context
                 past_context.append(word_index_map[line[j]])
             for j in range(i + 1, min(i + 1 + window_size, len(line))):  # Compute future context
                 future_context.append(word_index_map[line[j]])
-            centre_word_context_windows.append((word_index_map[word], [past_context, future_context]))
-
-            length_context = len(past_context) + len(future_context)
 
             '''Compute negative samples.'''
+            length_context = len(past_context) + len(future_context)
             samples = get_samples_from_multinomial(multinomial(k * length_context, ordered_unigram_statistics))
+
+            '''Pad context windows to full size.'''
+            if len(past_context) < window_size:
+                past_context = [pad_index] * (window_size - len(past_context)) + past_context
+            if len(future_context) < window_size:
+                future_context.extend([pad_index] * (window_size - len(future_context)))
+            if len(samples) < window_size * 2:
+                samples.extend([pad_index] * (window_size * 2 - len(samples)))
+
+            '''Store.'''
+            centre_word_context_windows.append((word_index_map[word], [past_context, future_context]))
             negative_samples.append((word_index_map[word], samples))
 
         print('\rPercentage done: {:2f}'.format(100*(m+1)/a), end='', flush=True)
@@ -238,6 +244,7 @@ def damned_experimental_subsampler():
 
 
 if __name__ == '__main__':
-    basic_dataset_preprocess(path_to_data)
+    if not osp.isfile(path_to_data[:-3] + '_10000_True.en'):
+        basic_dataset_preprocess(path_to_data)
 
     preprocess_data_skipgram(path_to_data[:-3] + '_10000_True.en', 2)
