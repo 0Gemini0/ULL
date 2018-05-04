@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 """
 Helper functions.
 """
@@ -11,8 +13,8 @@ from collections import defaultdict, Counter
 import operator
 import pickle
 
-path_to_data = "../Data/Original Data/test_data_file.txt"
-# path_to_data = "../Data/Original Data/hansards/training.en"
+# path_to_data = "../Data/Original Data/test_data_file.txt"
+path_to_data = "../Data/Original Data/hansards/training.en"
 # path_to_data = "../Data/Original Data/europarl/training.en"
 
 #####################################
@@ -134,7 +136,9 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
     """Compute context (past and future) and negative samples for each token in the dataset."""
     centre_word_context_windows = []
     negative_samples = []
-    for line in data_lines:
+    a = len(data_lines)
+    for m, line in enumerate(data_lines):
+        print("\r" + '{:2f}'.format(100*(m+1)/a), end="", flush=True)
         '''Compute context (past and future).'''
         for i, word in enumerate(line):
             past_context = []
@@ -226,3 +230,9 @@ def damned_experimental_subsampler():
     #         if (i > 20):
     #             break
     raise NotImplementedError()
+
+
+if __name__ == '__main__':
+    basic_dataset_preprocess(path_to_data)
+
+    preprocess_data_skipgram(path_to_data[:-3] + '_10000_True.en', 2)
