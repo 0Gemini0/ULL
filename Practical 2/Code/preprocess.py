@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """
-Helper functions.
+Data preprocessing.
 """
 
 ###########
@@ -12,6 +12,7 @@ from numpy.random import multinomial
 from collections import defaultdict, Counter
 import operator
 import pickle
+from time import time
 
 # path_to_data = "../Data/Original Data/test_data_file.txt"
 path_to_data = "../Data/Original Data/hansards/training.en"
@@ -127,10 +128,10 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
 
     '''Extra function for helping compute negative samples.'''
     def get_samples_from_multinomial(counts):
-        samples = []
-        for i, index_counts in enumerate(counts):
-            for _ in range(index_counts):
-                samples.append(i)
+        samples = [index for index in np.flatnonzero(counts) for _ in range(counts[index])]
+        # for index in np.flatnonzero(counts):
+        #     for _ in range(counts[index]):
+        #         samples.append(index)
         return samples
 
     """Compute context (past and future) and negative samples for each token in the dataset."""
@@ -138,8 +139,10 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
     negative_samples = []
     a = len(data_lines)
     for m, line in enumerate(data_lines):
-        print("\r" + '{:2f}'.format(100*(m+1)/a), end="", flush=True)
+        # print('{:2f}'.format(100*(m+1)/a), end="\n", flush=True)
         '''Compute context (past and future).'''
+        append_time = 0.0
+        sample_time = 0.0
         for i, word in enumerate(line):
             past_context = []
             future_context = []
@@ -154,6 +157,8 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
             '''Compute negative samples.'''
             samples = get_samples_from_multinomial(multinomial(k * length_context, ordered_unigram_statistics))
             negative_samples.append((word_index_map[word], samples))
+
+        print('\rPercentage done: {:2f}'.format(100*(m+1)/a), end='', flush=True)
 
     """Write data to files."""
     '''If saving sequentially.'''  # TODO: compute location of each example.
