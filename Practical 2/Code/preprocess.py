@@ -13,6 +13,7 @@ from collections import defaultdict, Counter
 import operator
 import pickle
 from time import time
+import os.path as osp
 
 # path_to_data = "../Data/Original Data/test_data_file.txt"
 path_to_data = "../Data/Original Data/hansards/training.en"
