@@ -6,8 +6,10 @@ Helper functions.
 # Imports #
 ###########
 import numpy as np
-from collections import defaultdict
+from numpy.random import multinomial
+from collections import defaultdict, Counter
 import operator
+import pickle
 
 path_to_data = "../Data/Original Data/test_data_file.txt"
 # path_to_data = "../Data/Original Data/hansards/training.en"
@@ -18,7 +20,23 @@ path_to_data = "../Data/Original Data/test_data_file.txt"
 #####################################
 
 
-def line_mutate(line, lowercase, dictionary, index_word_map=None, index=None, dict_operation="Word Count"):
+class MutableInt(object):
+
+    def __init__(self, initial_value):
+        self._integer = initial_value
+
+    def update_integer(self, new_value):
+        self._integer = new_value
+
+    def increment_value(self):
+        self._integer += 1
+
+    @property
+    def integer(self):
+        return self._integer
+
+
+def line_mutate(line, lowercase, dictionary, index_word_map=None, index=None, counter=None, dict_operation="Word Count"):
     ##############################################################################################################
     """Function to lowercase all words and strip '\r' and '\n' symbols. Also, implicitly counts word frequency."""
     ##############################################################################################################
@@ -38,11 +56,12 @@ def line_mutate(line, lowercase, dictionary, index_word_map=None, index=None, di
 
     '''Indexes all words in the line (implicitly, in the dataset).'''
     if (dict_operation == "Word Index"):
+        counter.update(line)
         for word in line:
             if (word not in dictionary):
-                dictionary[word] = index
+                dictionary[word] = index.integer
                 index_word_map.append(word)
-                index += 1
+                index.increment_value()
 
     return line
 
@@ -63,8 +82,6 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
     '''Order words on their frequency.'''
     ordered_counts = sorted(word_count.items(), key=operator.itemgetter(1), reverse=True)
 
-    print(ordered_counts)
-
     '''Specify which words will UNKed and which won't.'''
     to_UNK_dict = {}
     for i, pair in enumerate(ordered_counts):
@@ -81,25 +98,44 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
                 new_line += to_UNK_dict[word] + " "
             f.write(new_line[0:-1] + "\n")
 
-# TODO: FIX THIS FUNCTION!!!!!!!!!! CURRENTLY NOT WORKING!
+
 def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, store_sequentially=False):
     ###############################################################################
     """Loads the english side of the dataset corresponding to the provided path."""
     ###############################################################################
 
     '''Load the data.'''
-    with open(path_to_data, "r") as f:  # TODO: Add ', encoding='utf-8''
+    with open(path_to_data, "r", encoding='utf-8') as f:
         data_lines = f.readlines()
 
     '''Apply line_mutate to all lines in the dataset.'''
     word_index_map = {}
     index_word_map = []
-    index = 0
-    data_lines = [line_mutate(line, lowercase, word_index_map, index_word_map, index, "Word Index") for line in data_lines]
+    index = MutableInt(0)
+    counter = Counter()
+    data_lines = [line_mutate(line, lowercase, word_index_map, index_word_map, index, counter, "Word Index")
+                  for line in data_lines]
 
-    '''Compute context (past and future) for each token in the dataset.'''
-    centre_word_context_windows = defaultdict(lambda: [])  # TODO: Convert into list.
+    '''Compute unigram statistics of corpus.'''
+    N = float(sum(counter.values()))
+    unigram_statistics = {k: v/N for k, v in counter.items()}
+    ordered_unigram_statistics = [0]*len(index_word_map)
+    for word in unigram_statistics:
+        ordered_unigram_statistics[word_index_map[word]] = unigram_statistics[word]
+
+    '''Extra function for helping compute negative samples.'''
+    def get_samples_from_multinomial(counts):
+        samples = []
+        for i, index_counts in enumerate(counts):
+            for _ in range(index_counts):
+                samples.append(i)
+        return samples
+
+    """Compute context (past and future) and negative samples for each token in the dataset."""
+    centre_word_context_windows = []
+    negative_samples = []
     for line in data_lines:
+        '''Compute context (past and future).'''
         for i, word in enumerate(line):
             past_context = []
             future_context = []
@@ -107,12 +143,45 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
                 past_context.append(word_index_map[line[j]])
             for j in range(i + 1, min(i + 1 + window_size, len(line))):  # Compute future context
                 future_context.append(word_index_map[line[j]])
-            centre_word_context_windows[word_index_map[word]].append([past_context, future_context])  # Add past/future context to word
+            centre_word_context_windows.append((word_index_map[word], [past_context, future_context]))
 
-    print(centre_word_context_windows)
-    print(word_index_map)
-    print(index_word_map)
-preprocess_data_skipgram(path_to_data, 2)
+            length_context = len(past_context) + len(future_context)
+
+            '''Compute negative samples.'''
+            samples = get_samples_from_multinomial(multinomial(k * length_context, ordered_unigram_statistics))
+            negative_samples.append((word_index_map[word], samples))
+
+    """Write data to files."""
+    '''If saving sequentially.'''  # TODO: compute location of each example.
+    if (store_sequentially):
+        '''Positive samples.'''
+        with open(path_to_data[0:-3] + "_" + str(k) + "_" + str(lowercase) + "samples" + path_to_data[-3:], "w", encoding='utf-8') as f:
+            for context_window in centre_word_context_windows:
+                pickle.dump(context_window, f)
+
+        '''Negative samples.'''
+        with open(path_to_data[0:-3] + "_" + str(k) + "_" + str(lowercase) + "samples" + path_to_data[-3:], "w", encoding='utf-8') as f:
+            for negative_sample in negative_samples:
+                pickle.dump(negative_sample, f)
+
+    # '''If all examples at once.''' TODO: FIX STUPID COMMENT
+    else:
+        '''Positive samples.'''
+        pickle.dump(centre_word_context_windows, open(
+            path_to_data[0:-3] + "_" + str(k) + "_" + str(lowercase) + "samples" + path_to_data[-3:], "wb"))
+
+        '''Negative samples.'''
+        pickle.dump(negative_samples, open(path_to_data[0:-3] + "_" + str(k) +
+                                           "_" + str(lowercase) + "negativeSamples" + path_to_data[-3:], "wb"))
+
+    '''Word Index Map.'''
+    pickle.dump(word_index_map, open(path_to_data[0:-3] + "_" + str(k) +
+                                     "_" + str(lowercase) + "wordIndexMap" + path_to_data[-3:], "wb"))
+
+    '''Index Word Map.'''
+    pickle.dump(index_word_map, open(path_to_data[0:-3] + "_" + str(k) +
+                                     "_" + str(lowercase) + "indexWordMap" + path_to_data[-3:], "wb"))
+
 
 def damned_experimental_subsampler():
     '''This is an experimental "dirty" (as per Omar Levy) subsampler.'''
