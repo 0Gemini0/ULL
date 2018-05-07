@@ -16,19 +16,20 @@ class Bayesian(nn.Module):
     * v_dim (int): size of the vocabulary.
     * d_dim (int): size of the embeddings.
     * h_dim (int): size of hidden layers.
+    * pad_index (int): index of <pad> token.
     """
 
-    def __init__(self, v_dim, d_dim, h_dim):
+    def __init__(self, v_dim, d_dim, h_dim, pad_index=-1):
         super().__init__()
 
         ## TODO: layers
-        self.prior = Prior(v_dim, d_dim)
-        self.posterior = Posterior(v_dim, d_dim, h_dim)
+        self.prior = Prior(v_dim, d_dim, pad_index)
+        self.posterior = Posterior(v_dim, d_dim, h_dim, pad_index)
         self.standard_normal = Normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
 
-    def forward(self, center, context):
+    def forward(self, center, pos_c, pos_m, neg_c, neg_m):
         """The model samples an encoding from the posterior."""
-        mu, sigma = self.posterior(center, context)
+        mu, sigma = self.posterior(center, pos_c, pos_m)
         z = self.sample(mu, sigma)
 
     def _kl_divergence(self, mu_1, sigma_1, mu_2, sigma_2):
@@ -46,12 +47,12 @@ class Bayesian(nn.Module):
 class Prior(nn.Module):
     """Small feedforward module that outputs the (prior) mean and sigma of a Gaussian."""
 
-    def __init__(self, v_dim, d_dim):
+    def __init__(self, v_dim, d_dim, pad_index):
         super().__init__()
 
         # Embeddings for Mu and Sigma, only dependent on the words p(z|w); the Gaussians are spherical
-        self.mu = nn.Embedding(v_dim, e_dim, sparse=True)
-        self.sigma = nn.Embedding(v_dim, 1, sparse=True)
+        self.mu = nn.Embedding(v_dim, e_dim, sparse=True, padding_idx=pad_index)
+        self.sigma = nn.Embedding(v_dim, 1, sparse=True, padding_idx=pad_index)
 
     def forward(self, x):
         """Embed word x into a d-dimensional mu and (diagonal) (positive) sigma vector."""
@@ -64,48 +65,45 @@ class Prior(nn.Module):
 class Posterior(nn.Module):
     """Small feedforward module that outputs the (posterior) mean and sigma of a Gaussian."""
 
-    def __init__(self, v_dim, d_dim, h_dim):
+    def __init__(self, v_dim, d_dim, h_dim, pad_index):
         super().__init__()
 
         self.h_dim = h_dim
+        self.d_dim = d_dim
 
-        # The first layer is just a random embedding of the center and context words
-        self.embedding = nn.Embedding(v_dim, d_dim)
+        # The first layer is just a random embedding of the center and context words, <pad> gets zero embedding
+        self.embedding = nn.Embedding(v_dim, d_dim, sparse=True, padding_idx=pad_index)
 
         # Mean and sigma of the posterior Gaussians, which are again spherical
         self.linear = nn.Linear(d_dim * 2, h_dim)
         self.mean = nn.Linear(h_dim, d_dim)
         self.sigma = nn.Linear(h_dim, 1)
 
-    def forward(self, center, contexts):
-        """Input is assumed to be a sequence of sequences of torch tensors with size [batch_size x dim]."""
+    def forward(self, center, context, mask):
+        """
+        The forward pass through the posterior network predicts the mean and sigma of a Normal given a batch of central words
+        and their (positive) context words.
+        """
+        # We expect center to be of shape [B] and context to be of shape [B x W]
         center = self.embedding(center)
-        pairs = []
-        lengths = []
+        context = self.embedding(context)
 
-        for i, context in enumerate(contexts):
-            context = self.embedding(context)
+        # We need the size of the context window for reshaping
+        w_dim = context.shape[1]
 
-            # We keep track of the batch_size of the contexts, as not all central words in the batch may have the same
-            # number of context words
-            lengths.append(context.shape[0])
+        # We repeat the center embeddings W times and flatten context, so we can concat and do a single forward pass
+        center = center.unsqueeze(1).repeat(1, w_dim, 1).view(-1, self.d_dim)
+        context = context.view(-1, self.d_dim)
+        x = torch.cat([center, context], dim=1)
 
-            # We append each center word embedding to its context word embedding, given that it has a context word in
-            # position i
-            pairs.append(torch.cat([center[:lengths[i], :], context], dim=1))
-
-        # Stack the concatenated pairs into a single input of the linear layer
-        x = torch.cat(pairs, dim=0)
-        h = F.relu(self.linear(x))
-
-        # Split and sum into a single hidden layer
-        h_list = torch.split(h, lengths, dim=0)
-        h_sum = torch.zeros([center.shape[0], self.h_dim])
-        for h, length in zip(h_list, lengths):
-            h_sum[:length, :] += h
+        # Forward pass, masking and sum, result will be a shape [B x H] matrix
+        # Mask is of shape [B x W], which we expand to [B x W x H] so we can mask after the forward pass but before sum
+        h = F.relu(self.linear(x)).view(-1, w_dim, self.h_dim)
+        mask = mask.unsqueeze(2).expand(-1, -1, self.h_dim)
+        h_sum = (h * mask).sum(dim=1)
 
         # Compute mean and sigma
         mean = self.mean(h_sum)
-        sigma = F.softplus(self.sigma(h_dim))  # We don't use log_sigma as in the paper for stability reasons
+        sigma = F.softplus(self.sigma(h_sum))  # We don't use log_sigma as in the paper for stability reasons
 
         return mean, sigma

@@ -184,19 +184,19 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
     else:
         '''Positive samples.'''
         pickle.dump(centre_word_context_windows, open(
-            path_to_data[0:-3] + "_" + str(k) + "_" + str(lowercase) + "samples" + path_to_data[-3:], "wb"))
+            path_to_data[0:-3] + "_" + str(k) + "_" + str(lowercase) + "_" + "samples" + path_to_data[-3:], "wb"))
 
         '''Negative samples.'''
         pickle.dump(negative_samples, open(path_to_data[0:-3] + "_" + str(k) +
-                                           "_" + str(lowercase) + "negativeSamples" + path_to_data[-3:], "wb"))
+                                           "_" + str(lowercase) + "_" + "negativeSamples" + path_to_data[-3:], "wb"))
 
     '''Word Index Map.'''
     pickle.dump(word_index_map, open(path_to_data[0:-3] + "_" + str(k) +
-                                     "_" + str(lowercase) + "wordIndexMap" + path_to_data[-3:], "wb"))
+                                     "_" + str(lowercase) + "_" + "wordIndexMap" + path_to_data[-3:], "wb"))
 
     '''Index Word Map.'''
     pickle.dump(index_word_map, open(path_to_data[0:-3] + "_" + str(k) +
-                                     "_" + str(lowercase) + "indexWordMap" + path_to_data[-3:], "wb"))
+                                     "_" + str(lowercase) + "_" + "indexWordMap" + path_to_data[-3:], "wb"))
 
 
 def damned_experimental_subsampler():
