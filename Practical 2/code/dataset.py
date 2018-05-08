@@ -1,13 +1,13 @@
 import torch
 from torch.utils.data import DataSet
-import pickle
+import msgpack
 
 
 class SkipGramData(DataSet):
 
     def __init__(self, pos_path, neg_path, pad_index=-1):
-        positive_data = pickle.load(open(pos_path, 'rb'))
-        negative_data = pickle.load(open(neg_path, 'rb'))
+        positive_data = msgpack.load(open(pos_path, 'rb'))
+        negative_data = msgpack.load(open(neg_path, 'rb'))
 
         # Extract words and context to tensors
         self._center = torch.LongTensor([data[0] for data in positive_data])

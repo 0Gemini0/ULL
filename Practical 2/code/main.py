@@ -9,10 +9,16 @@ from models.skipgram import SkipGram
 from models.bayesian import Bayesian
 
 
+def construct_path(opt, name):
+    return osp.join(opt.data_path, opt.dataset, "training_" + opt.vocab_size + "_" + str(bool(opt.lowercase))
+                    + "_" + opt.window_size + "_" + opt.k + "_" + name + "." + opt.language)
+
+
 def main(opt):
     # Load data
-    data = DataLoader(SkipGramData(opt.pos_path, opt.neg_path),
+    data = DataLoader(SkipGramData(construct_path(opt, "samples"), construct_path(opt, "negativeSamples")),
                       batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    idx_to_word = msgpack.load(open(construct_path(opt, "indexWordMap"), 'rb'), encoding='utf-8')
 
     # Load model
     if opt.model == "skipgram":

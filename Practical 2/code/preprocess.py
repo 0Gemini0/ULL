@@ -15,12 +15,14 @@ import pickle
 from time import time
 import os.path as osp
 import msgpack
-
 from settings import parse_settings
 
-# path_to_data = "../Data/Original Data/test_data_file.txt"
-# path_to_data = "../Data/Original Data/hansards/training.en"
-# path_to_data = "../Data/Original Data/europarl/training.en"
+# Patch msgpack to work with numpy
+import msgpack_numpy as m
+m.patch()
+
+
+# path_to_data = "../data/original/test_data_file.tx"
 
 #####################################
 # Data loading/processing functions #
@@ -135,7 +137,7 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, store_sequentially=
 
     '''Extra function for helping compute negative samples.'''
     def get_samples_from_multinomial(counts):
-        samples = [index for index in np.flatnonzero(counts) for _ in range(counts[index])]
+        samples = [int(index) for index in np.flatnonzero(counts) for _ in range(counts[index])]
         return samples
 
     """Compute context (past and future) and negative samples for each token in the dataset."""
@@ -252,7 +254,7 @@ def damned_experimental_subsampler():
 if __name__ == '__main__':
     opt = parse_settings()
 
-    path_to_data = osp.join(opt.data_path, opt.dataset, 'training.' + opt.language)
+    # path_to_data = osp.join(opt.data_path, opt.dataset, 'training.' + opt.language)
 
     path_to_data = basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
 
