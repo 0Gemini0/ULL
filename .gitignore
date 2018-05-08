@@ -103,4 +103,8 @@ ENV/
 # project
 *.words
 *.idea
-Practical 2/Data/
+*.en
+*.txt
+*.fr
+*.msg
+Practical 2/data/

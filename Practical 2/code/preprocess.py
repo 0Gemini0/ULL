@@ -14,9 +14,12 @@ import operator
 import pickle
 from time import time
 import os.path as osp
+import msgpack
+
+from settings import parse_settings
 
 # path_to_data = "../Data/Original Data/test_data_file.txt"
-path_to_data = "../Data/Original Data/hansards/training.en"
+# path_to_data = "../Data/Original Data/hansards/training.en"
 # path_to_data = "../Data/Original Data/europarl/training.en"
 
 #####################################
@@ -95,15 +98,18 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
             to_UNK_dict[pair[0]] = "UNK"
 
     '''Save the UNKed (on threshold) and lowercased(?) dataset to file.'''
-    with open(path_to_data[0:-3] + "_" + str(threshold) + "_" + str(lowercase) + path_to_data[-3:], "w", encoding='utf-8') as f:
+    filename = path_to_data[0:-3] + "_" + str(threshold) + "_" + str(bool(lowercase)) + path_to_data[-3:]
+    with open(filename, "w", encoding='utf-8') as f:
         for line in data_lines:
             new_line = ""
             for word in line:
                 new_line += to_UNK_dict[word] + " "
             f.write(new_line[0:-1] + "\n")
 
+    return filename
 
-def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, store_sequentially=False, pad_index=-1):
+
+def preprocess_data_skipgram(path_to_data, window_size, k=1, store_sequentially=False, pad_index=-1):
     ###############################################################################
     """Loads the english side of the dataset corresponding to the provided path."""
     ###############################################################################
@@ -117,7 +123,7 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
     index_word_map = []
     index = MutableInt(0)
     counter = Counter()
-    data_lines = [line_mutate(line, lowercase, word_index_map, index_word_map, index, counter, "Word Index")
+    data_lines = [line_mutate(line, False, word_index_map, index_word_map, index, counter, "Word Index")
                   for line in data_lines]
 
     '''Compute unigram statistics of corpus.'''
@@ -130,9 +136,6 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
     '''Extra function for helping compute negative samples.'''
     def get_samples_from_multinomial(counts):
         samples = [index for index in np.flatnonzero(counts) for _ in range(counts[index])]
-        # for index in np.flatnonzero(counts):
-        #     for _ in range(counts[index]):
-        #         samples.append(index)
         return samples
 
     """Compute context (past and future) and negative samples for each token in the dataset."""
@@ -170,33 +173,35 @@ def preprocess_data_skipgram(path_to_data, window_size, k=1, lowercase=True, sto
     """Write data to files."""
     '''If saving sequentially.'''  # TODO: compute location of each example.
     if (store_sequentially):
-        '''Positive samples.'''
-        with open(path_to_data[0:-3] + "_" + str(k) + "_" + str(lowercase) + "samples" + path_to_data[-3:], "w", encoding='utf-8') as f:
-            for context_window in centre_word_context_windows:
-                pickle.dump(context_window, f)
-
-        '''Negative samples.'''
-        with open(path_to_data[0:-3] + "_" + str(k) + "_" + str(lowercase) + "samples" + path_to_data[-3:], "w", encoding='utf-8') as f:
-            for negative_sample in negative_samples:
-                pickle.dump(negative_sample, f)
+        # TODO: seq storing with msgpack
+        raise NotImplementedError()
+        # '''Positive samples.'''
+        # with open(path_to_data[0:-3] + "_" + str(window_size) + '_' + str(k) + "_" + "samples" + path_to_data[-3:], "w", encoding='utf-8') as f:
+        #     for context_window in centre_word_context_windows:
+        #         pickle.dump(context_window, f)
+        #
+        # '''Negative samples.'''
+        # with open(path_to_data[0:-3] + "_" + str(window_size) + '_' + str(k) + "_" + "samples" + path_to_data[-3:], "w", encoding='utf-8') as f:
+        #     for negative_sample in negative_samples:
+        #         pickle.dump(negative_sample, f)
 
     # '''If all examples at once.''' TODO: FIX STUPID COMMENT
     else:
         '''Positive samples.'''
-        pickle.dump(centre_word_context_windows, open(
-            path_to_data[0:-3] + "_" + str(k) + "_" + str(lowercase) + "_" + "samples" + path_to_data[-3:], "wb"))
+        msgpack.dump(centre_word_context_windows, open(
+            path_to_data[0:-3] + "_" + str(window_size) + '_' + str(k) + "_" + "samples" + path_to_data[-3:], "wb"))
 
         '''Negative samples.'''
-        pickle.dump(negative_samples, open(path_to_data[0:-3] + "_" + str(k) +
-                                           "_" + str(lowercase) + "_" + "negativeSamples" + path_to_data[-3:], "wb"))
+        msgpack.dump(negative_samples, open(path_to_data[0:-3] + "_" + str(window_size) + '_' +
+                                            str(k) + "_" + "negativeSamples" + path_to_data[-3:], "wb"))
 
-    '''Word Index Map.'''
-    pickle.dump(word_index_map, open(path_to_data[0:-3] + "_" + str(k) +
-                                     "_" + str(lowercase) + "_" + "wordIndexMap" + path_to_data[-3:], "wb"))
+    '''Word Index Map. use_bin_type=True to pack strings, paired with unpacking with encoding=utf-8'''
+    msgpack.dump(word_index_map, open(path_to_data[0:-3] + "_" + str(window_size) + '_' +
+                                      str(k) + "_" + "wordIndexMap" + path_to_data[-3:], "wb"), use_bin_type=True)
 
     '''Index Word Map.'''
-    pickle.dump(index_word_map, open(path_to_data[0:-3] + "_" + str(k) +
-                                     "_" + str(lowercase) + "_" + "indexWordMap" + path_to_data[-3:], "wb"))
+    msgpack.dump(index_word_map, open(path_to_data[0:-3] + "_" + str(window_size) + '_' +
+                                      str(k) + "_" + "indexWordMap" + path_to_data[-3:], "wb"), use_bin_type=True)
 
 
 def damned_experimental_subsampler():
@@ -245,7 +250,10 @@ def damned_experimental_subsampler():
 
 
 if __name__ == '__main__':
-    if not osp.isfile(path_to_data[:-3] + '_10000_True.en'):
-        basic_dataset_preprocess(path_to_data)
+    opt = parse_settings()
 
-    preprocess_data_skipgram(path_to_data[:-3] + '_10000_True.en', 2)
+    path_to_data = osp.join(opt.data_path, opt.dataset, 'training.' + opt.language)
+
+    path_to_data = basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
+
+    preprocess_data_skipgram(path_to_data, opt.window_size, opt.k, opt.save_sequential)

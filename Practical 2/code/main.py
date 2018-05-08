@@ -5,8 +5,8 @@ from torch.utils.data import DataLoader
 
 from settings import parse_settings
 from dataset import SkipGramData
-from Models.skipgram import SkipGram
-from Models.bayesian import Bayesian
+from models.skipgram import SkipGram
+from models.bayesian import Bayesian
 
 
 def main(opt):
@@ -16,10 +16,9 @@ def main(opt):
 
     # Load model
     if opt.model == "skipgram":
-        model = SkipGram(opt.v_dim, opt.h_dim)
+        model = SkipGram(opt.v_dim, opt.d_dim)
     elif opt.model == "bayesian":
-        # do something else
-        raise NotImplementedError()
+        model = Bayesian(opt.v_dim, opt.d_dim, opt.h_dim)
     elif opt.model == "embedalign":
         # do something else else
         raise NotImplementedError()
