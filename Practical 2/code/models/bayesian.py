@@ -19,7 +19,7 @@ class Bayesian(nn.Module):
     * pad_index (int): index of <pad> token.
     """
 
-    def __init__(self, v_dim, d_dim, h_dim, pad_index=-1):
+    def __init__(self, v_dim, d_dim, h_dim, pad_index):
         super().__init__()
 
         ## TODO: layers
@@ -29,7 +29,12 @@ class Bayesian(nn.Module):
 
     def forward(self, center, pos_c, pos_m, neg_c, neg_m):
         """The model samples an encoding from the posterior."""
-        mu, sigma = self.posterior(center, pos_c, pos_m)
+        # Sample mean and sigma from the posterior of central word based on its true context
+        mu_posterior, sigma_posterior = self.posterior(center, pos_c, pos_m)
+
+        # Sample mean and sigma from the prior of both positive and negative context for the hinge loss
+        mu_prior_pos, sigma_prior_pos = self.prior(pos_c)
+        mu_prior_neg, sigma_prior_neg = self.prior(neg_c)
         z = self.sample(mu, sigma)
 
     def _kl_divergence(self, mu_1, sigma_1, mu_2, sigma_2):

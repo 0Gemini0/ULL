@@ -111,7 +111,7 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
     return filename
 
 
-def preprocess_data_skipgram(path_to_data, window_size, k=1, store_sequentially=False, pad_index=-1):
+def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_sequentially=False):
     ###############################################################################
     """Loads the english side of the dataset corresponding to the provided path."""
     ###############################################################################
@@ -254,8 +254,8 @@ def damned_experimental_subsampler():
 if __name__ == '__main__':
     opt = parse_settings()
 
-    # path_to_data = osp.join(opt.data_path, opt.dataset, 'training.' + opt.language)
+    path_to_data = osp.join(opt.data_path, opt.dataset, 'training.' + opt.language)
 
     path_to_data = basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
 
-    preprocess_data_skipgram(path_to_data, opt.window_size, opt.k, opt.save_sequential)
+    preprocess_data_skipgram(path_to_data, opt.window_size, opt.vocab_size + 1, opt.k, opt.save_sequential)

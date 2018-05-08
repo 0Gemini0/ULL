@@ -18,10 +18,12 @@ class SkipGram(nn.Module):
     * pad_idx: index used for padding. Default -1.
     """
 
-    def __init__(self, v_dim, d_dim, pad_idx=-1):
+    def __init__(self, v_dim, d_dim, pad_index):
+        super().__init__()
+
         # Embedding matrices for both context and center words; pad_idx will return 0-vector embeddings.
-        self.center_embedding = nn.Embedding(v_dim, d_dim, sparse=True, padding_idx=pad_idx)
-        self.context_embedding = nn.Embeding(v_dim, d_dim, sparse=True, padding_idx=pad_idx)
+        self.center_embedding = nn.Embedding(v_dim, d_dim, sparse=True, padding_idx=pad_index)
+        self.context_embedding = nn.Embedding(v_dim, d_dim, sparse=True, padding_idx=pad_index)
 
     def forward(self, center, pos_c, pos_m, neg_c, neg_m):
         """Compute the positive and negative score of a batch of center words based on context, return them as loss."""

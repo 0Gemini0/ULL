@@ -1,22 +1,24 @@
 import torch
-from torch.utils.data import DataSet
+from torch.utils.data import Dataset
 import msgpack
 
 
-class SkipGramData(DataSet):
+class SkipGramData(Dataset):
 
-    def __init__(self, pos_path, neg_path, pad_index=-1):
+    def __init__(self, pos_path, neg_path, pad_index):
         positive_data = msgpack.load(open(pos_path, 'rb'))
         negative_data = msgpack.load(open(neg_path, 'rb'))
 
         # Extract words and context to tensors
         self._center = torch.LongTensor([data[0] for data in positive_data])
-        self._pos_context = torch.LongTensor(data[1][0] + data[1][1] for data in positive_data)
-        self._neg_context = torch.LongTensor(data[1] for data in negative_data)
+        self._pos_context = torch.LongTensor([data[1][0] + data[1][1] for data in positive_data])
+        self._neg_context = torch.LongTensor([data[1] for data in negative_data])
 
         # Mask padding
-        self._pos_mask = 1 - (pos_context == pad_index).long()
-        self._neg_mask = 1 - (neg_context == pad_index).long()
+        self._pos_mask = 1 - (self._pos_context == pad_index).long()
+        self._neg_mask = 1 - (self._neg_context == pad_index).long()
+
+        print(sum(sum(self._pos_mask - self._neg_mask)))
 
     def __len__(self):
         return self._center.shape[0]
