@@ -56,8 +56,8 @@ class Prior(nn.Module):
         super().__init__()
 
         # Embeddings for Mu and Sigma, only dependent on the words p(z|w); the Gaussians are spherical
-        self.mu = nn.Embedding(v_dim, e_dim, sparse=True, padding_idx=pad_index)
-        self.sigma = nn.Embedding(v_dim, 1, sparse=True, padding_idx=pad_index)
+        self.mu = nn.Embedding(v_dim, e_dim, padding_idx=pad_index)
+        self.sigma = nn.Embedding(v_dim, 1, padding_idx=pad_index)
 
     def forward(self, x):
         """Embed word x into a d-dimensional mu and (diagonal) (positive) sigma vector."""
@@ -77,7 +77,7 @@ class Posterior(nn.Module):
         self.d_dim = d_dim
 
         # The first layer is just a random embedding of the center and context words, <pad> gets zero embedding
-        self.embedding = nn.Embedding(v_dim, d_dim, sparse=True, padding_idx=pad_index)
+        self.embedding = nn.Embedding(v_dim, d_dim, padding_idx=pad_index)
 
         # Mean and sigma of the posterior Gaussians, which are again spherical
         self.linear = nn.Linear(d_dim * 2, h_dim)

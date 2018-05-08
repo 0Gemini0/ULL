@@ -30,15 +30,15 @@ def main(opt):
         opt.cuda = True
 
     # Load data
-    data = DataLoader(SkipGramData(construct_data_path(opt, "samples"), construct_data_path(opt, "negativeSamples"), opt.v_dim),
+    data = DataLoader(SkipGramData(construct_data_path(opt, "samples"), construct_data_path(opt, "negativeSamples"), opt.v_dim-1),
                       batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True)
     idx_to_word = msgpack.load(open(construct_data_path(opt, "indexWordMap"), 'rb'), encoding='utf-8')
 
     # Load model
     if opt.model == "skipgram":
-        model = SkipGram(opt.v_dim, opt.d_dim, opt.v_dim)
+        model = SkipGram(opt.v_dim, opt.d_dim, opt.v_dim-1)
     elif opt.model == "bayesian":
-        model = Bayesian(opt.v_dim, opt.d_dim, opt.h_dim, opt.v_dim)
+        model = Bayesian(opt.v_dim, opt.d_dim, opt.h_dim, opt.v_dim-1)
     elif opt.model == "embedalign":
         # do something else else
         raise NotImplementedError()
