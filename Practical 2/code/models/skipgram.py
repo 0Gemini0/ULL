@@ -42,4 +42,4 @@ class SkipGram(nn.Module):
         neg_scores = F.logsigmoid(torch.bmm(-neg_c, center).squeeze()).sum(dim=1)
 
         # Directly return the loss, i.e. the negative normalized sum of the positive and negative 'score'
-        return -torch.sum(pos_scores + neg_scores) / pos_scores.shape[0]
+        return -(pos_scores + neg_scores) / pos_scores.shape[0]

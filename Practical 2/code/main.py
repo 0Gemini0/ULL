@@ -77,7 +77,7 @@ def main(opt):
                 neg_mask = neg_mask.cuda()
 
             # Actual training
-            loss = model(center, pos_context, pos_mask, neg_context, neg_mask)
+            loss = torch.sum(model(center, pos_context, pos_mask, neg_context, neg_mask))
             ep_loss += loss.data
 
             # Get gradients and update parameters
