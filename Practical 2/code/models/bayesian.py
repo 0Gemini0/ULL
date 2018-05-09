@@ -32,12 +32,20 @@ class Bayesian(nn.Module):
         # Sample mean and sigma from the posterior of central word based on its true context
         mu_posterior, sigma_posterior = self.posterior(center, pos_c, pos_m)
         mu_prior_cen, sigma_prior_cen = self.prior(center)
-        #[B x W x D]
+        #[B x D], [B]
+
+        # If not used anywhere else, have forward return unsqueezed tensors already
+        mu_posterior = mu_posterior.unsqueeze(1)
+        mu_prior_cen = mu_posterior.unsqueeze(1)
+        sigma_posterior = sigma_posterior.unsqueeze(1)
+        sigma_prior_cen = sigma_prior_cen.unsqueeze(1)
+        #[B x 1 x D], [B x 1]
+
 
         # Sample mean and sigma from the prior of both positive and negative context for the hinge loss
         mu_prior_pos, sigma_prior_pos = self.prior(pos_c)
         mu_prior_neg, sigma_prior_neg = self.prior(neg_c)
-        #[B x W x D]
+        #[B x W x D], [B x W]
 
 
 
