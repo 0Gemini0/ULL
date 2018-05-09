@@ -82,7 +82,7 @@ def main(opt):
             optimizer.step()
 
             # See progress
-            print("\rSteps this epoch: {.2f}".format(j, end=""))
+            print("\rSteps this epoch: {}".format(j, end=""))
 
         print("Epoch: {}, Average Loss: {}".format(i, ep_loss/j))
 
