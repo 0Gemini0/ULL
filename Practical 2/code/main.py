@@ -85,7 +85,7 @@ def main(opt):
             optimizer.step()
 
             # See Batch Loss
-            print("\rBatch Loss: {}".format(loss.data), end="", flush=True)
+            print("\rBatch Loss: {}".format(loss.data[0]), end="", flush=True)
 
             # See progress
             if j % 1000 == 0:
