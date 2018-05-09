@@ -25,8 +25,9 @@ def construct_model_path(opt):
 
 def main(opt):
     # Cuda functionality
-    if opt.cuda is not None and opt.cuda > -1:
-        torch.cuda.set_device(opt.cuda)
+    if opt.cuda is not None:
+        if opt.cuda > -1:
+            torch.cuda.set_device(opt.cuda)
         opt.cuda = True
     else:
         opt.cuda = False
@@ -51,6 +52,8 @@ def main(opt):
 
     if opt.cuda:
         model.cuda()
+        if torch.cuda.device_count() > 1:
+            model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
 
     # Define optimizer
     parameters = filter(lambda p: p.requires_grad, model.parameters())
@@ -82,7 +85,7 @@ def main(opt):
             optimizer.step()
 
             # See progress
-            print("\rSteps this epoch: {}".format(j, end=""))
+            print("\rSteps this epoch: {}".format(j), end="", flush=True)
 
         print("Epoch: {}, Average Loss: {}".format(i, ep_loss/j))
 
