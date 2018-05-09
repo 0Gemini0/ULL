@@ -37,12 +37,21 @@ class Bayesian(nn.Module):
         mu_prior_neg, sigma_prior_neg = self.prior(neg_c)
         z = self.sample(mu, sigma)
 
+
     def _kl_divergence(self, mu_1, sigma_1, mu_2, sigma_2):
         """
-        Computes the KL-divergence between two Gaussian distributions with diagonal covariance given their mean and covariance.
+        Batch wise computation of KL divergence between spherical Gaussians.
         """
-        return -1. / self.batch_size * 0.5 * torch.sum(torch.log(sigma_2) - torch.log(sigma_1)
-                                                       + sigma_1 / sigma_2 + (mu_2 - mu_1) ** 2 / sigma_2 - 1)
+        batch_size = mu_1.shape[0]
+        embed_size = mu_1.shape[1]
+
+        # Means inner product with respect to Sigma_2
+        means_diff = mu_2 - mu_1
+        ips2 = torch.bmm(means_diff.view(batch_size, 1, embed_size), means_diff.view(batch_size, embed_size, 1))
+
+        # Compute rest of the KL training instance wise, sum over all instances and immediately average for loss
+        return 0.5 * torch.sum(embed_size*(torch.log(sigma_2/sigma_1) - 1 + sigma_1/sigma_2) + ips2/sigma_2)/batch_size
+       
 
     def sample(self, mu, sigma):
         """Reparameterized sampling from a Gaussian density."""
