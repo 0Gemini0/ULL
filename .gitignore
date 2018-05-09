@@ -108,3 +108,4 @@ ENV/
 *.fr
 *.msg
 Practical 2/data/
+*/.vscode/
