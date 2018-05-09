@@ -27,14 +27,21 @@ class Bayesian(nn.Module):
         self.posterior = Posterior(v_dim, d_dim, h_dim, pad_index)
         self.standard_normal = Normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
 
-    def forward(self, center, pos_c, pos_m, neg_c, neg_m):
+    def forward(self, center, pos_c, pos_m, neg_c, neg_m, margin):
         """The model samples an encoding from the posterior."""
         # Sample mean and sigma from the posterior of central word based on its true context
         mu_posterior, sigma_posterior = self.posterior(center, pos_c, pos_m)
+        mu_prior_cen, sigma_prior_cen = self.prior(center)
+        #[B x W x D]
 
         # Sample mean and sigma from the prior of both positive and negative context for the hinge loss
         mu_prior_pos, sigma_prior_pos = self.prior(pos_c)
         mu_prior_neg, sigma_prior_neg = self.prior(neg_c)
+        #[B x W x D]
+
+
+
+
         z = self.sample(mu, sigma)
 
 
@@ -50,7 +57,7 @@ class Bayesian(nn.Module):
         ips2 = torch.bmm(means_diff.view(batch_size, 1, embed_size), means_diff.view(batch_size, embed_size, 1))
 
         # Compute rest of the KL training instance wise, sum over all instances and immediately average for loss
-        return 0.5 * torch.sum(embed_size*(torch.log(sigma_2/sigma_1) - 1 + sigma_1/sigma_2) + ips2/sigma_2)/batch_size
+        return 0.5 * embed_size*(torch.log(sigma_2/sigma_1) - 1 + sigma_1/sigma_2) + ips2/sigma_2
        
 
     def sample(self, mu, sigma):
