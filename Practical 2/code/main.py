@@ -85,7 +85,8 @@ def main(opt):
             optimizer.step()
 
             # See progress
-            print("\rSteps this epoch: {}".format(j), end="", flush=True)
+            if j % 1000 == 0:
+                print("\rSteps this epoch: {}".format(j), end="", flush=True)
 
         print("Epoch: {}, Average Loss: {}".format(i, ep_loss/j))
 
