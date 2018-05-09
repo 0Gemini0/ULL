@@ -84,6 +84,9 @@ def main(opt):
             loss.backward()
             optimizer.step()
 
+            # See Batch Loss
+            print("\rBatch Loss: {}".format(loss.data), end="", flush=True)
+
             # See progress
             if j % 1000 == 0:
                 print("\rSteps this epoch: {}".format(j), end="", flush=True)
