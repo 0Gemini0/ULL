@@ -6,8 +6,10 @@ import msgpack
 class SkipGramData(Dataset):
 
     def __init__(self, pos_path, neg_path, pad_index):
-        positive_data = msgpack.load(open(pos_path, 'rb'))
-        negative_data = msgpack.load(open(neg_path, 'rb'))
+        with open(pos_path, 'rb') as f:
+            positive_data = msgpack.load(f)
+        with open(neg_path, 'rb') as f:
+            negative_data = msgpack.load(f)
 
         # Extract words and context to tensors
         self._center = torch.LongTensor([data[0] for data in positive_data])

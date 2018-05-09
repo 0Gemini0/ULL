@@ -3,7 +3,7 @@ Skipgram model in PyTorch.
 """
 import torch
 from torch import nn
-import torch.functional as F
+import torch.nn.functional as F
 
 
 class SkipGram(nn.Module):

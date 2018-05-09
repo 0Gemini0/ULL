@@ -94,7 +94,7 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
     '''Specify which words will UNKed and which won't.'''
     to_UNK_dict = {}
     for i, pair in enumerate(ordered_counts):
-        if (i <= threshold):
+        if (i < threshold):
             to_UNK_dict[pair[0]] = pair[0]
         else:
             to_UNK_dict[pair[0]] = "UNK"

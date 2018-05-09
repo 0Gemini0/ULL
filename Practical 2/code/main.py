@@ -28,10 +28,13 @@ def main(opt):
     if opt.cuda is not None and opt.cuda > -1:
         torch.cuda.set_device(opt.cuda)
         opt.cuda = True
+    else:
+        opt.cuda = False
 
     # Load data
     data = DataLoader(SkipGramData(construct_data_path(opt, "samples"), construct_data_path(opt, "negativeSamples"), opt.v_dim-1),
                       batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    print("After dataloading")
     idx_to_word = msgpack.load(open(construct_data_path(opt, "indexWordMap"), 'rb'), encoding='utf-8')
 
     # Load model
@@ -44,17 +47,19 @@ def main(opt):
         raise NotImplementedError()
     else:
         raise Exception("Model not recognized, choose [skipgram, bayesian, embedalign]")
+    print("After model loading")
 
     # Define optimizer
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = Adam(parameters, opt.lr)
+    print("After optimizer")
 
     # Training loop
     for i in range(opt.num_epochs):
         ep_loss = 0.
+        print("Before data loop")
         for j, (center, pos_context, pos_mask, neg_context, neg_mask) in enumerate(data):
             # Tedious wrapping of Tensors into Variables that may or may not be cuda'd
-            print(torch.max(pos_context))
             center = Variable(center)
             pos_context = Variable(pos_context)
             pos_mask = Variable(pos_mask)
@@ -69,11 +74,15 @@ def main(opt):
 
             # Actual training
             loss = model(center, pos_context, pos_mask, neg_context, neg_mask)
-            ep_loss += loss.data()
+            ep_loss += loss.data
+            print("After forward")
 
             # Get gradients and update parameters
             loss.backward()
             optimizer.step()
+
+            # See progress
+            print("\rSteps this epoch: {}".format(j), end="")
 
         print("Epoch: {}, Average Loss: {}".format(i, ep_loss/j))
 
