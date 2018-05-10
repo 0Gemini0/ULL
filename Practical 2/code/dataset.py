@@ -27,3 +27,27 @@ class SkipGramData(Dataset):
 
     def __getitem__(self, idx):
         return self._center[idx], self._pos_context[idx], self._pos_mask[idx], self._neg_context[idx], self._neg_mask[idx]
+
+
+class EmbedAlignData(Dataset):
+
+    def __init__(self, data, pad_index):
+        with open(data, 'rb') as f:
+            data = msgpack.load(f)
+
+        # Extract sentences
+        self._en_data = torch.LongTensor([d[0] for d in data])
+        self._fr_data = torch.LongTensor([d[1] for d in data])
+
+        # Mask padding
+        self._en_mask = 1 - (self._en_data == pad_index).long()
+        self._fr_mask = 1 - (self._fr_data == pad_index).long()
+
+        # English sentence length
+        self._en_len = self._en_data.shape[1] - self._en_mask.sum(dim=1)
+
+    def __len__(self):
+        return self._en_data.shape[0]
+
+    def __getitem__(self, idx):
+        return self._en_data[idx], self._en_len[idx], self._en_mask[idx], self._fr_data[idx], self._fr_mask[idx]
