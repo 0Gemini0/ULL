@@ -27,24 +27,27 @@ class Bayesian(nn.Module):
         self.posterior = Posterior(v_dim, d_dim, h_dim, pad_index)
         self.standard_normal = Normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
 
-    def forward(self, center, pos_c, neg_c, mask, margin=1.):
+    def forward(self, center, pos_c, neg_c, mask, margin=10.0):
         """The model samples an encoding from the posterior."""
         # Sample mean and sigma from the posterior of central word based on its true context
         mu_posterior, sigma_posterior = self.posterior(center, pos_c, mask)
         mu_prior_cen, sigma_prior_cen = self.prior(center)
-        # [B x D], [B]
+        # [B x D], [B x 1]
 
         # If not used anywhere else, have forward return unsqueezed tensors already
         mu_posterior = mu_posterior.unsqueeze(1)
         mu_prior_cen = mu_prior_cen.unsqueeze(1)
-        sigma_posterior = sigma_posterior.unsqueeze(1)
-        sigma_prior_cen = sigma_prior_cen.unsqueeze(1)
-        # [B x 1 x D], [B x 1]
+        # [B x 1 x D]
 
         # Sample mean and sigma from the prior of both positive and negative context for the hinge loss
         mu_prior_pos, sigma_prior_pos = self.prior(pos_c)
         mu_prior_neg, sigma_prior_neg = self.prior(neg_c)
-        # [B x W x D], [B x W]
+        # [B x W x D], [B x W x 1]
+
+        # Squeeze the sigmas
+        sigma_prior_pos = sigma_prior_pos.squeeze()
+        sigma_prior_neg = sigma_prior_neg.squeeze()
+        # [B x W]
 
         # Compute KL-divergences
         kl_cen = self._kl_divergence(mu_posterior, sigma_posterior, mu_prior_cen, sigma_prior_cen)
@@ -52,7 +55,7 @@ class Bayesian(nn.Module):
         kl_neg = self._kl_divergence(mu_posterior, sigma_posterior, mu_prior_neg, sigma_prior_neg)
 
         # Compute hinge-style loss and normalize over batch size. We mask pad context.
-        loss = torch.sum(kl_cen + (mask * F.relu(kl_pos - kl_neg + margin)).sum(dim=1)) / mu_posterior.shape[0]
+        loss = torch.sum(kl_cen + (mask.float() * F.relu(kl_pos - kl_neg + margin)).sum(dim=1)) / mu_posterior.shape[0]
 
         return loss
 
@@ -71,10 +74,7 @@ class Bayesian(nn.Module):
 
         # Compute rest of the KL training instance wise, sum over all instances and immediately average for loss
         # In: [B x W], out: [B x W]
-        print(ips2.shape)
-        print(sigma_1.shape)
-        print(sigma_2.shape)
-        return 0.5 * embed_size*(torch.log(sigma_2/sigma_1) - 1 + sigma_1/sigma_2) + ips2/sigma_2
+        return 0.5 * (embed_size*(torch.log(sigma_2/sigma_1) - 1 + sigma_1/sigma_2) + ips2/sigma_2)
 
     def _sample(self, mu, sigma):
         """Reparameterized sampling from a Gaussian density."""

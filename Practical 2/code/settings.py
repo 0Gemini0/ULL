@@ -35,7 +35,7 @@ def parse_settings():
                         help='Which model to use. Choose [skipgram, bayesian, embedalign].')
     parser.add_argument('--v_dim', type=int, default=10002,
                         help='Dimensionality of input layer V.')
-    parser.add_argument('--d_dim', type=int, default=256,
+    parser.add_argument('--d_dim', type=int, default=2,
                         help='Dimensionality of embedding layer D.')
     parser.add_argument('--h_dim', type=int, default=256,
                         help='Dimensionality of hidden layers H.')
