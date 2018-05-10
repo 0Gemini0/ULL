@@ -160,11 +160,13 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
 
             '''Pad context windows to full size.'''
             if len(past_context) < window_size:
-                past_context = [pad_index] * (window_size - len(past_context)) + past_context
+                pad = [pad_index] * (window_size - len(past_context))
+                past_context = pad + past_context
+                samples = pad + samples
             if len(future_context) < window_size:
-                future_context.extend([pad_index] * (window_size - len(future_context)))
-            if len(samples) < window_size * 2:
-                samples.extend([pad_index] * (window_size * 2 - len(samples)))
+                pad = [pad_index] * (window_size - len(future_context))
+                future_context.extend(pad)
+                samples.extend(pad)
 
             '''Store.'''
             centre_word_context_windows.append((word_index_map[word], [past_context, future_context]))

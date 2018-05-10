@@ -4,7 +4,7 @@ Bayesian skipgram model in PyTorch.
 import torch
 from torch import nn
 from torch.distributions import Normal
-import torch.functional as F
+import torch.nn.functional as F
 
 
 class Bayesian(nn.Module):
@@ -22,53 +22,60 @@ class Bayesian(nn.Module):
     def __init__(self, v_dim, d_dim, h_dim, pad_index):
         super().__init__()
 
-        ## TODO: layers
+        # Layers
         self.prior = Prior(v_dim, d_dim, pad_index)
         self.posterior = Posterior(v_dim, d_dim, h_dim, pad_index)
         self.standard_normal = Normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
 
-    def forward(self, center, pos_c, pos_m, neg_c, neg_m, margin):
+    def forward(self, center, pos_c, neg_c, mask, margin=1.):
         """The model samples an encoding from the posterior."""
         # Sample mean and sigma from the posterior of central word based on its true context
-        mu_posterior, sigma_posterior = self.posterior(center, pos_c, pos_m)
+        mu_posterior, sigma_posterior = self.posterior(center, pos_c, mask)
         mu_prior_cen, sigma_prior_cen = self.prior(center)
-        #[B x D], [B]
+        # [B x D], [B]
 
         # If not used anywhere else, have forward return unsqueezed tensors already
         mu_posterior = mu_posterior.unsqueeze(1)
-        mu_prior_cen = mu_posterior.unsqueeze(1)
+        mu_prior_cen = mu_prior_cen.unsqueeze(1)
         sigma_posterior = sigma_posterior.unsqueeze(1)
         sigma_prior_cen = sigma_prior_cen.unsqueeze(1)
-        #[B x 1 x D], [B x 1]
-
+        # [B x 1 x D], [B x 1]
 
         # Sample mean and sigma from the prior of both positive and negative context for the hinge loss
         mu_prior_pos, sigma_prior_pos = self.prior(pos_c)
         mu_prior_neg, sigma_prior_neg = self.prior(neg_c)
-        #[B x W x D], [B x W]
+        # [B x W x D], [B x W]
 
+        # Compute KL-divergences
+        kl_cen = self._kl_divergence(mu_posterior, sigma_posterior, mu_prior_cen, sigma_prior_cen)
+        kl_pos = self._kl_divergence(mu_posterior, sigma_posterior, mu_prior_pos, sigma_prior_pos)
+        kl_neg = self._kl_divergence(mu_posterior, sigma_posterior, mu_prior_neg, sigma_prior_neg)
 
+        # Compute hinge-style loss and normalize over batch size. We mask pad context.
+        loss = torch.sum(kl_cen + (mask * F.relu(kl_pos - kl_neg + margin)).sum(dim=1)) / mu_posterior.shape[0]
 
-
-        z = self.sample(mu, sigma)
-
+        return loss
 
     def _kl_divergence(self, mu_1, sigma_1, mu_2, sigma_2):
         """
         Batch wise computation of KL divergence between spherical Gaussians.
         """
         batch_size = mu_1.shape[0]
-        embed_size = mu_1.shape[1]
+        embed_size = mu_1.shape[2]
+        window_size = mu_2.shape[1]
 
-        # Means inner product with respect to Sigma_2
+        # Means inner product with respect to Sigma_2. In: [B x W x D], out: [B x W]
         means_diff = mu_2 - mu_1
-        ips2 = torch.bmm(means_diff.view(batch_size, 1, embed_size), means_diff.view(batch_size, embed_size, 1))
+        print(means_diff.shape)
+        ips2 = torch.bmm(means_diff.view(batch_size, window_size, 1,  embed_size),
+                         means_diff.view(batch_size, window_size, embed_size, 1))
+        print(ips2.shape)
 
         # Compute rest of the KL training instance wise, sum over all instances and immediately average for loss
+        # In: [B x W], out: [B x W]
         return 0.5 * embed_size*(torch.log(sigma_2/sigma_1) - 1 + sigma_1/sigma_2) + ips2/sigma_2
-       
 
-    def sample(self, mu, sigma):
+    def _sample(self, mu, sigma):
         """Reparameterized sampling from a Gaussian density."""
         return mu + sigma * self.standard_normal.sample_n(mu.shape[0])
 
@@ -80,7 +87,7 @@ class Prior(nn.Module):
         super().__init__()
 
         # Embeddings for Mu and Sigma, only dependent on the words p(z|w); the Gaussians are spherical
-        self.mu = nn.Embedding(v_dim, e_dim, padding_idx=pad_index)
+        self.mu = nn.Embedding(v_dim, d_dim, padding_idx=pad_index)
         self.sigma = nn.Embedding(v_dim, 1, padding_idx=pad_index)
 
     def forward(self, x):
@@ -129,7 +136,7 @@ class Posterior(nn.Module):
         # Mask is of shape [B x W], which we expand to [B x W x H] so we can mask after the forward pass but before sum
         h = F.relu(self.linear(x)).view(-1, w_dim, self.h_dim)
         mask = mask.unsqueeze(2).expand(-1, -1, self.h_dim)
-        h_sum = (h * mask).sum(dim=1)
+        h_sum = (h * mask.float()).sum(dim=1)
 
         # Compute mean and sigma
         mean = self.mean(h_sum)

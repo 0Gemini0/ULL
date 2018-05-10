@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch.autograd import Variable
 import msgpack
+import numpy as np
 
 from settings import parse_settings
 from dataset import SkipGramData
@@ -18,9 +19,32 @@ def construct_data_path(opt, name):
                     + "_" + str(opt.window_size) + "_" + str(opt.k) + "_" + name + "." + opt.language)
 
 
-def construct_model_path(opt):
-    return osp.join(opt.data_path, opt.dataset, opt.model + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
-                    + "_" + str(opt.window_size) + "_" + str(opt.k) + ".pt")
+def construct_model_path(opt, is_best):
+    if is_best:
+        return osp.join(opt.out_path, opt.dataset, opt.model + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
+                        + "_" + str(opt.window_size) + "_" + str(opt.k) + ".pt")
+    else:
+        return osp.join(opt.out_path, opt.dataset, opt.model + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
+                        + "_" + str(opt.window_size) + "_" + str(opt.k) + "_checkpoint.pt")
+
+
+def save_checkpoint(opt, model, optimizer, epoch, loss, is_best):
+    checkpoint = {
+        'epoch': epoch + 1,
+        'state_dict': model.state_dict(),
+        'loss': loss,
+        'optimizer': optimizer.state_dict(),
+    }
+    torch.save(checkpoint, construct_model_path(opt, is_best))
+
+
+def load_checkpoint(opt, model, optimizer):
+    checkpoint = torch.load(construct_model_path(opt, False))
+    opt.start_epoch = checkpoint['epoch']
+    model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    loss = checkpoint["loss"]
+    return opt, model, optimizer, loss
 
 
 def main(opt):
@@ -60,6 +84,8 @@ def main(opt):
     optimizer = Adam(parameters, opt.lr)
 
     # Training loop
+    losses = []
+    best_loss = np.inf
     for i in range(opt.num_epochs):
         ep_loss = 0.
         for j, (center, pos_context, pos_mask, neg_context, neg_mask) in enumerate(data):
@@ -78,7 +104,7 @@ def main(opt):
 
             # Actual training
             loss = torch.sum(model(center, pos_context, pos_mask, neg_context, neg_mask))
-            ep_loss += loss.data
+            ep_loss += loss.data[0]
 
             # Get gradients and update parameters
             loss.backward()
@@ -90,11 +116,17 @@ def main(opt):
             # See progress
             if j % 1000 == 0:
                 print("\rSteps this epoch: {}".format(j), end="", flush=True)
+        if ep_loss < best_loss:
+            best_loss = ep_loss
+            is_best = True
+        losses.append(ep_loss)
+
+        # Save_checkpoint
+        save_checkpoint(opt, model, optimizer, i, losses, is_best)
 
         print("Epoch: {}, Average Loss: {}".format(i, ep_loss/j))
 
-    # Save model with training settings in the name
-    model.save_state_dict(construct_model_path(opt))
+        is_best = False
 
 
 if __name__ == '__main__':
