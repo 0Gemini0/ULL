@@ -35,7 +35,7 @@ def parse_settings():
                         help='Which model to use. Choose [skipgram, bayesian, embedalign].')
     parser.add_argument('--v_dim', type=int, default=10002,
                         help='Dimensionality of input layer V.')
-    parser.add_argument('--d_dim', type=int, default=2,
+    parser.add_argument('--d_dim', type=int, default=100,
                         help='Dimensionality of embedding layer D.')
     parser.add_argument('--h_dim', type=int, default=256,
                         help='Dimensionality of hidden layers H.')
@@ -43,7 +43,7 @@ def parse_settings():
     # Training
     parser.add_argument('--cuda', type=int, default=None,
                         help='Cuda device number or None.')
-    parser.add_argument('--lr', type=float, default=1e-3,
+    parser.add_argument('--lr', type=float, default=1e-4,
                         help='Learning rate.')
     parser.add_argument('--num_epochs', type=int, default=10,
                         help='Number of epochs over the data.')
