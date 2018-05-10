@@ -66,13 +66,14 @@ class Bayesian(nn.Module):
 
         # Means inner product with respect to Sigma_2. In: [B x W x D], out: [B x W]
         means_diff = mu_2 - mu_1
-        print(means_diff.shape)
-        ips2 = torch.bmm(means_diff.view(batch_size, window_size, 1,  embed_size),
-                         means_diff.view(batch_size, window_size, embed_size, 1))
-        print(ips2.shape)
+        ips2 = torch.matmul(means_diff.view(batch_size, window_size, 1,  embed_size),
+                            means_diff.view(batch_size, window_size, embed_size, 1)).view(batch_size, window_size)
 
         # Compute rest of the KL training instance wise, sum over all instances and immediately average for loss
         # In: [B x W], out: [B x W]
+        print(ips2.shape)
+        print(sigma_1.shape)
+        print(sigma_2.shape)
         return 0.5 * embed_size*(torch.log(sigma_2/sigma_1) - 1 + sigma_1/sigma_2) + ips2/sigma_2
 
     def _sample(self, mu, sigma):
