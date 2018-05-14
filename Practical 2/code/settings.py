@@ -47,7 +47,7 @@ def parse_settings():
                         help='Learning rate.')
     parser.add_argument('--num_epochs', type=int, default=10,
                         help='Number of epochs over the data.')
-    parser.add_argument('--batch_size', type=int, default=128,
+    parser.add_argument('--batch_size', type=int, default=256,
                         help="Number of datapoints per minibatch.")
 
     return parser.parse_args()
