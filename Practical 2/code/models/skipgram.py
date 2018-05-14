@@ -26,7 +26,7 @@ class SkipGram(nn.Module):
         self.context_embedding = nn.Embedding(v_dim, d_dim, padding_idx=pad_index, sparse=True)
         self.sparse_params = [p for p in self.parameters()]
 
-    def forward(self, center, pos_c, pos_m, neg_c, neg_m):
+    def forward(self, center, pos_c, neg_c, mask):
         """Compute the positive and negative score of a batch of center words based on context, return them as loss."""
         # Embed; center should be [B], pos_c should be [B x W], neg_c should be [B x K * W]
         center = self.center_embedding(center)
