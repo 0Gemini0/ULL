@@ -9,7 +9,7 @@ import msgpack
 import numpy as np
 
 from settings import parse_settings
-from dataset import SkipGramData
+from dataset import SkipGramData, EmbedAlignData, sort_collate
 from models.skipgram import SkipGram
 from models.bayesian import Bayesian
 
@@ -48,70 +48,62 @@ def load_checkpoint(opt, model, optimizer):
 
 
 def main(opt):
-    # Cuda functionality
-    if opt.cuda is not None:
-        if opt.cuda > -1:
-            torch.cuda.set_device(opt.cuda)
-        opt.cuda = True
-    else:
-        opt.cuda = False
+    # We activate the GPU if cuda is available, otherwise computation will be done on cpu
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print("Using device: {}".format(device))
 
-    # Load data
+    # Now we load the data fitting the selected model
     print("Loading Data...")
-    data = DataLoader(SkipGramData(construct_data_path(opt, "samples"), construct_data_path(opt, "negativeSamples"), opt.v_dim-1),
-                      batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    if opt.model == "embedalign":
+        data = DataLoader(EmbedAlignData(construct_data_path(opt, "sentences"), opt.v_dim - 1),
+                          batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True, collate_fn=sort_collate)
+    else:
+        data = DataLoader(SkipGramData(construct_data_path(opt, "samples"), construct_data_path(opt, "negativeSamples"),
+                                       opt.v_dim - 1), batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True)
     idx_to_word = msgpack.load(open(construct_data_path(opt, "indexWordMap"), 'rb'), encoding='utf-8')
     print("Data was succesfully loaded.")
 
-    # Load model
+    # We load the selected model and place it on the available device(s)
     if opt.model == "skipgram":
         model = SkipGram(opt.v_dim, opt.d_dim, opt.v_dim-1)
     elif opt.model == "bayesian":
         model = Bayesian(opt.v_dim, opt.d_dim, opt.h_dim, opt.v_dim-1)
     elif opt.model == "embedalign":
-        # do something else else
-        raise NotImplementedError()
+        model = EmbedAlign(opt.v_dim, opt.v_dim, opt.d_dim, opt.h_dim, opt.v_dim-1)
     else:
         raise Exception("Model not recognized, choose [skipgram, bayesian, embedalign]")
 
-    if opt.cuda:
-        model.cuda()
-        if torch.cuda.device_count() > 1:
-            model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
+    if opt.parallel and torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
+        print("Using parallel processing on GPUs")
+    else:
+        model.to(device)
 
-    # Define optimizer
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = Adam(parameters, opt.lr)
 
-    # Training loop
     losses = []
     best_loss = np.inf
     for i in range(opt.num_epochs):
         ep_loss = 0.
         for j, (center, pos_context, pos_mask, neg_context, neg_mask) in enumerate(data):
-            # Tedious wrapping of Tensors into Variables that may or may not be cuda'd
-            center = Variable(center)
-            pos_context = Variable(pos_context)
-            pos_mask = Variable(pos_mask)
-            neg_context = Variable(neg_context)
-            neg_mask = Variable(neg_mask)
-            if opt.cuda:
-                center = center.cuda()
-                pos_context = pos_context.cuda()
-                pos_mask = pos_mask.cuda()
-                neg_context = neg_context.cuda()
-                neg_mask = neg_mask.cuda()
+            # No longer tedious! Send data to selected device
+            center = center.to(device)
+            pos_context = pos_context.to(device)
+            pos_mask = pos_mask.to(device)
+            neg_context = neg_context.to(device)
+            neg_mask = neg_mask.to(device)
 
             # Actual training
             loss = torch.sum(model(center, pos_context, neg_context, pos_mask))
-            ep_loss += loss.data[0]
+            ep_loss += loss.item()
 
             # Get gradients and update parameters
             loss.backward()
             optimizer.step()
 
             # See Batch Loss
-            print("\rBatch Loss: {}".format(loss.data[0]), end="", flush=True)
+            print("\rBatch Loss: {}".format(loss.item()), end="", flush=True)
 
             # See progress
             if j % 1000 == 0:

@@ -44,10 +44,29 @@ class EmbedAlignData(Dataset):
         self._fr_mask = 1 - (self._fr_data == pad_index).long()
 
         # English sentence length
-        self._en_len = self._en_data.shape[1] - self._en_mask.sum(dim=1)
+        self._en_len = self._en_mask.sum(dim=1)
 
     def __len__(self):
         return self._en_data.shape[0]
 
     def __getitem__(self, idx):
         return self._en_data[idx], self._en_len[idx], self._en_mask[idx], self._fr_data[idx], self._fr_mask[idx]
+
+
+def sort_collate(batch):
+    """Sort a given batch on its length."""
+    # Unpack. Works only with EmbedAlignData
+    en_data = batch[0]
+    en_len = batch[1]
+    en_mask = batch[2]
+    fr_data = batch[3]
+    fr_mask = batch[4]
+
+    # Get sort indices from the len array
+    en_len, indices = torch.sort(en_len)
+    en_data = en_len[indices]
+    en_mask = en_mask[indices]
+    fr_data = fr_data[indices]
+    fr_mask = fr_mask[indices]
+
+    return (en_data, en_len, en_mask, fr_data, fr_mask)

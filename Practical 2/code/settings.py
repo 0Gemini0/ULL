@@ -41,8 +41,8 @@ def parse_settings():
                         help='Dimensionality of hidden layers H.')
 
     # Training
-    parser.add_argument('--cuda', type=int, default=None,
-                        help='Cuda device number or None.')
+    parser.add_argument('--parallel', type=int, default=1,
+                        help='Whether to use parallel processing if available.')
     parser.add_argument('--lr', type=float, default=1e-4,
                         help='Learning rate.')
     parser.add_argument('--num_epochs', type=int, default=10,
