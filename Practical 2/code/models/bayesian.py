@@ -26,6 +26,7 @@ class Bayesian(nn.Module):
         self.prior = Prior(v_dim, d_dim, pad_index)
         self.posterior = Posterior(v_dim, d_dim, h_dim, pad_index)
         self.standard_normal = Normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
+        self.sparse_params = self.prior.sparse_params + self.posterior.sparse_params
 
     def forward(self, center, pos_c, neg_c, mask, margin=1.0):
         """The model samples an encoding from the posterior."""
@@ -88,8 +89,9 @@ class Prior(nn.Module):
         super().__init__()
 
         # Embeddings for Mu and Sigma, only dependent on the words p(z|w); the Gaussians are spherical
-        self.mu = nn.Embedding(v_dim, d_dim, padding_idx=pad_index)
-        self.sigma = nn.Embedding(v_dim, 1, padding_idx=pad_index)
+        self.mu = nn.Embedding(v_dim, d_dim, padding_idx=pad_index, sparse=True)
+        self.sigma = nn.Embedding(v_dim, 1, padding_idx=pad_index, sparse=True)
+        self.sparse_params = [p for p in self.parameters()]
 
     def forward(self, x):
         """Embed word x into a d-dimensional mu and (diagonal) (positive) sigma vector."""
@@ -109,7 +111,8 @@ class Posterior(nn.Module):
         self.d_dim = d_dim
 
         # The first layer is just a random embedding of the center and context words, <pad> gets zero embedding
-        self.embedding = nn.Embedding(v_dim, d_dim, padding_idx=pad_index)
+        self.embedding = nn.Embedding(v_dim, d_dim, padding_idx=pad_index, sparse=True)
+        self.sparse_params = [p for p in self.parameters()]
 
         # Mean and sigma of the posterior Gaussians, which are again spherical
         self.linear = nn.Linear(d_dim * 2, h_dim)

@@ -43,7 +43,7 @@ def parse_settings():
     # Training
     parser.add_argument('--parallel', type=int, default=1,
                         help='Whether to use parallel processing if available.')
-    parser.add_argument('--lr', type=float, default=1e-4,
+    parser.add_argument('--lr', type=float, default=1e-3,
                         help='Learning rate.')
     parser.add_argument('--num_epochs', type=int, default=10,
                         help='Number of epochs over the data.')

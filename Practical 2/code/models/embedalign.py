@@ -17,8 +17,9 @@ class EmbedAlign(nn.Module):
     def __init__(self, v_dim_en, v_dim_fr, d_dim, h_dim, pad_index):
         super().__init__()
 
-        self._encoder = Encoder(v_dim_en, h_dim, d_dim)
+        self._encoder = Encoder(v_dim_en, h_dim, d_dim, pad_index)
         self._decoder = Decoder(v_dim_en, v_dim_fr, d_dim)
+        self.sparse_params = self._encoder.sparse_params
 
     def forward(self, center, pos_c, mask):
         mus, sigmas = self._encoder(x)
@@ -35,11 +36,13 @@ class Encoder(nn.Module):
     The encoder part of EMBEDALIGN.
     """
 
-    def __init__(self, v_dim_en, h_dim, d_dim):
+    def __init__(self, v_dim_en, h_dim, d_dim, pad_index):
         super().__init__()
 
+        self._det_emb = nn.Embedding(v_dim_en, d_dim, padding_idx=pad_index, sparse=True)
+        self.sparse_params = [p for p in self.parameters()]
+
         self._gru = nn.GRU(v_dim_en, h_dim, batch_first=True, bidirectional=True)
-        self._det_emb = nn.Embedding(v_dim_en, d_dim)
         self._mu_proj = torch.nn.Linear(h_dim, d_dim)
         self._sig_proj = torch.nn.Linear(h_dim, d_dim)
 

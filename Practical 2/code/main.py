@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import os.path as osp
+from time import time
 
 import torch
 from torch.utils.data import DataLoader
-from torch.optim import Adam
+from torch.optim import Adam, SparseAdam
 from torch.autograd import Variable
 import msgpack
 import numpy as np
@@ -28,23 +29,23 @@ def construct_model_path(opt, is_best):
                         + "_" + str(opt.window_size) + "_" + str(opt.k) + "_checkpoint.pt")
 
 
-def save_checkpoint(opt, model, optimizer, epoch, loss, is_best):
+def save_checkpoint(opt, model, optimizers, epoch, loss, is_best):
     checkpoint = {
         'epoch': epoch + 1,
         'state_dict': model.state_dict(),
         'loss': loss,
-        'optimizer': optimizer.state_dict(),
+        'optimizers': [optimizer.state_dict() for optimizer in optimizers],
     }
     torch.save(checkpoint, construct_model_path(opt, is_best))
 
 
-def load_checkpoint(opt, model, optimizer):
+def load_checkpoint(opt, model, optimizers):
     checkpoint = torch.load(construct_model_path(opt, False))
     opt.start_epoch = checkpoint['epoch']
     model.load_state_dict(checkpoint['state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
+    optimizers = [optimizers[i].load_state_dict(checkpoint['optimizers'][i]) for i in range(len(optimizer))]
     loss = checkpoint["loss"]
-    return opt, model, optimizer, loss
+    return opt, model, optimizers, loss
 
 
 def main(opt):
@@ -79,14 +80,22 @@ def main(opt):
     else:
         model.to(device)
 
-    parameters = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = Adam(parameters, opt.lr)
+    # To work with ADAM and Sparse Embeddings, we need (retardedly) to manually store sparse parameters
+    parameters_sparse = list(filter(lambda p: p.requires_grad, model.sparse_params))
+    parameters = list(filter(lambda p: p.requires_grad, model.parameters()))
+    parameters = [p for p in parameters if not any(p is p_ for p_ in parameters_sparse)]
+    optimizers = []
+    if parameters_sparse:
+        optimizers.append(SparseAdam(parameters_sparse, opt.lr))
+    if parameters:
+        optimizers.append(Adam(parameters, opt.lr))
 
     losses = []
     best_loss = np.inf
     for i in range(opt.num_epochs):
         ep_loss = 0.
         for j, (center, pos_context, pos_mask, neg_context, neg_mask) in enumerate(data):
+            start = time()
             # No longer tedious! Send data to selected device
             center = center.to(device)
             pos_context = pos_context.to(device)
@@ -99,22 +108,24 @@ def main(opt):
             ep_loss += loss.item()
 
             # Get gradients and update parameters
+            for optimizer in optimizers:
+                optimizer.zero_grad()
             loss.backward()
-            optimizer.step()
-
-            # See Batch Loss
-            print("\rBatch Loss: {}".format(loss.item()), end="", flush=True)
+            for optimizer in optimizers:
+                optimizer.step()
 
             # See progress
             if j % 1000 == 0:
-                print("\rSteps this epoch: {}".format(j), end="", flush=True)
+                print("\rSteps this epoch: {}, time: {}s, loss: {}".format(
+                    j, time() - start, loss.item()), end="", flush=True)
+
         if ep_loss < best_loss:
             best_loss = ep_loss
             is_best = True
         losses.append(ep_loss)
 
         # Save_checkpoint
-        save_checkpoint(opt, model, optimizer, i, losses, is_best)
+        save_checkpoint(opt, model, optimizers, i, losses, is_best)
 
         print("Epoch: {}, Average Loss: {}".format(i, ep_loss/j))
 
