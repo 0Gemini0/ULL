@@ -55,7 +55,7 @@ class Encoder(nn.Module):
         h = pad_packed_sequence(h_packed, batch_first=True)
         # [B x S x 2H]
 
-        h_sum = h[:, :, :h.shape[2]/2] + hidden_states[:, :, h.shape[2]/2:]
+        h_sum = h[:, :, :h.shape[2]/2] + h[:, :, h.shape[2]/2:]
         # [B x S x H]
 
         mus = self._mu_proj(h_sum)
@@ -78,7 +78,7 @@ class Decoder(nn.Module):
         self._en_proj = torch.nn.Linear(d_dim, v_dim_en)
         self._fr_proj = torch.nn.Linear(d_dim, v_dim_fr)
 
-    def forward(zs):
+    def forward(self, zs):
         en_preds = self._en_proj(zs)
         fr_preds = self._fr_proj(zs)
 
