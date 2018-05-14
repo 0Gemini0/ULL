@@ -63,7 +63,7 @@ def sort_collate(batch):
     fr_mask = batch[4]
 
     # Get sort indices from the len array
-    en_len, indices = torch.sort(en_len)
+    en_len, indices = torch.sort(en_len, descending=True)
     en_data = en_len[indices]
     en_mask = en_mask[indices]
     fr_data = fr_data[indices]

@@ -1,11 +1,11 @@
 """
 EmbedAlign model in PyTorch.
 """
-
+import numpy as np
 import torch
 from torch import nn
 from torch.nn.utils import pack_padded_sequence, pad_packed_sequence
-from torch.distributions import Normal
+from torch.distributions import Normal, Categorical
 import torch.nn.functional as F
 
 
@@ -14,12 +14,13 @@ class EmbedAlign(nn.Module):
     The EmbedAlign model in PyTorch.
     """
 
-    def __init__(self, v_dim_en, v_dim_fr, d_dim, h_dim, pad_index):
+    def __init__(self, v_dim_en, v_dim_fr, d_dim, h_dim, pad_index, device):
         super().__init__()
 
         self._encoder = Encoder(v_dim_en, h_dim, d_dim, pad_index)
         self._decoder = Decoder(v_dim_en, v_dim_fr, d_dim)
-        self.sparse_params = self._encoder.sparse_params
+        self.sparse_params = self._encoder.sparse_params + self._decoder.sparse_params
+        self.device = device
 
     def forward(self, center, pos_c, mask):
         mus, sigmas = self._encoder(x)
@@ -74,12 +75,55 @@ class Decoder(nn.Module):
 
     def __init__(self, v_dim_en, v_dim_fr, d_dim):
         super().__init__()
+        self.v_dim_en = v_dim_en
+        self.v_dim_fr = v_dim_fr
 
-        self._en_proj = torch.nn.Linear(d_dim, v_dim_en)
-        self._fr_proj = torch.nn.Linear(d_dim, v_dim_fr)
+        self.en_embedding = nn.Embedding(v_dim_en, d_dim, padding_idx=pad_index, sparse=True)
+        self.fr_embedding = nn.Embedding(v_dim_fr, d_dim, padding_idx=pad_index, sparse=True)
+        self.sparse_params = [p for p in self.parameters()]
 
-    def forward(self, zs):
-        en_preds = self._en_proj(zs)
+    def forward(self, zs, x_en, x_fr, neg_size):
+        en_probs = self._css_en(x_en, self.v_dim_en, neg_size, self.en_embedding, zs)
         fr_preds = self._fr_proj(zs)
 
         return en_preds, fr_preds
+
+    def _css_en(self, x, v_dim, num, embedding, z):
+        """Generate a negative set without replacement for CSS given a batch as positive set."""
+        positive_set, _ = np.unique(x.numpy())
+        neg_dim = v_dim - positive_set.shape[0]
+        weights = torch.ones([v_dim], device=self.device)
+        weights[positive_set] = 0.
+
+        negative_set = torch.multinomial(weights, num, replacement=False)
+        kappa = torch.tensor(neg_dim / num, device=self.device)
+
+        batch_embeddings = embedding(x)
+        positive_embeddings = embedding(torch.tensor(positive_embeddings, device=self.device))
+        negative_embeddings = embedding(negative_set)
+
+        # TODO: stable exponentials
+        batch_score = torch.exp((z * batch_embeddings).sum(dim=2))
+        positive_score = torch.exp(torch.matmul(z, positive_embeddings.transpose(1, 0))).sum(dim=2)
+        negative_score = kappa * torch.exp(torch.matmul(z, negative_embeddings).transpose(1, 0))).sum(dim = 2)
+
+        return batch_score / (positive_score + negative_score)
+
+    def _css_fr(self, x, v_dim, num, embedding, z):
+        positive_set, _=np.unique(x.numpy())
+        neg_dim=v_dim - positive_set.shape[0]
+        weights=torch.ones([v_dim], device = self.device)
+        weights[positive_set]=0.
+
+        negative_set=torch.multinomial(weights, num, replacement = False)
+        kappa=torch.tensor(neg_dim / num, device = self.device)
+
+        batch_embeddings=embedding(x)
+        positive_embeddings=embedding(torch.tensor(positive_embeddings, device=self.device))
+        negative_embeddings=embedding(negative_set)
+
+        batch_score=torch.exp(torch.bmm(batch_embeddings, z.transpose(1, 2)))
+        positive_score=torch.exp(torch.matmul(z, positive_embeddings.transpose(1, 0))).sum(dim = 2)
+        negative_score=kappa * torch.exp(torch.matmul(z, negative_embeddings).transpose(1, 0))).sum(dim=2)
+
+        return batch_score / (positive_score + negative_score).unsqueeze(1)
