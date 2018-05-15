@@ -39,7 +39,9 @@ def parse_settings():
     # Model architecture
     parser.add_argument('--model', type=str, default='embedalign',
                         help='Which model to use. Choose [skipgram, bayesian, embedalign].')
-    parser.add_argument('--v_dim', type=int, default=10002,
+    parser.add_argument('--v_dim_en', type=int, default=10002,
+                        help='Dimensionality of input layer V.')
+    parser.add_argument('--v_dim_fr', type=int, default=10002,
                         help='Dimensionality of input layer V.')
     parser.add_argument('--d_dim', type=int, default=10,
                         help='Dimensionality of embedding layer D.')

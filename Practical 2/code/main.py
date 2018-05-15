@@ -15,6 +15,11 @@ from models.skipgram import SkipGram
 from models.bayesian import Bayesian
 from models.embedalign import EmbedAlign
 
+HANSARD_EN_MAX = 17370
+HANSARD_FR_MAX = 22830
+EUROPARL_EN_MAX = 61281
+EUROPARL_FR_MAX = 73445
+
 
 def construct_data_path(opt, name):
     return osp.join(opt.data_path, opt.dataset, opt.training_test + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
@@ -59,23 +64,32 @@ def main(opt):
     # device = torch.device("cpu")
     print("Using device: {}".format(device))
 
+    if opt.vocab_size == 0:
+        if opt.dataset == "hansards":
+            opt.v_dim_en = HANSARD_EN_MAX + 1
+            opt.v_dim_fr = HANSARD_FR_MAX + 1
+        elif opt.dataset == 'europarl':
+            opt.v_dim_en = EUROPARL_EN_MAX + 1
+            opt.v_dim_fr = EUROPARL_FR_MAX + 1
+
     # Now we load the data fitting the selected model
     print("Loading Data...")
     if opt.model == "embedalign":
-        data = DataLoader(EmbedAlignData(construct_data_path_ea(opt, "data.both"), opt.v_dim - 1),
+        data = DataLoader(EmbedAlignData(construct_data_path_ea(opt, "data.both"), opt.v_dim_en - 1, opt.v_dim_fr - 1),
                           batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True, collate_fn=sort_collate)
     else:
         data = DataLoader(SkipGramData(construct_data_path(opt, "samples"), construct_data_path(opt, "negativeSamples"),
-                                       opt.v_dim - 1), batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+                                       opt.v_dim_en - 1), batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True)
     print("Data was succesfully loaded.")
 
     # We load the selected model and place it on the available device(s)
     if opt.model == "skipgram":
-        model = SkipGram(opt.v_dim, opt.d_dim, opt.v_dim-1)
+        model = SkipGram(opt.v_dim_en, opt.d_dim, opt.v_dim_en-1)
     elif opt.model == "bayesian":
-        model = Bayesian(opt.v_dim, opt.d_dim, opt.h_dim, opt.v_dim-1)
+        model = Bayesian(opt.v_dim_en, opt.d_dim, opt.h_dim, opt.v_dim_en-1)
     elif opt.model == "embedalign":
-        model = EmbedAlign(opt.v_dim, opt.v_dim, opt.d_dim, opt.h_dim, opt.neg_dim, opt.v_dim-1, device)
+        model = EmbedAlign(opt.v_dim_en, opt.v_dim_fr, opt.d_dim, opt.h_dim,
+                           opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, device)
     else:
         raise Exception("Model not recognized, choose [skipgram, bayesian, embedalign]")
 
@@ -120,11 +134,11 @@ def main(opt):
             # See progress
             if j % 10 == 0:
                 print("\rSteps this epoch: {}, time: {}s, avg_loss: {}".format(
-                    j, t, ep_loss/j), end="", flush=True)
+                    j, t, ep_loss/(j+1)), end="", flush=True)
 
             t += time() - start
 
-        avg_loss = ep_loss/j
+        avg_loss = ep_loss/(j+1)
         if avg_loss < best_loss:
             best_loss = avg_loss
             is_best = True

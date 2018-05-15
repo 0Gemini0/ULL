@@ -1,0 +1,34 @@
+# Development data
+
+* dev.fr contains the development sentences in French
+* dev.en contains the development sentences in English
+
+These files are aligned at the sentence level, that is, the i-th line in dev.fr is a French translation of the English sentence in the i-th line of dev.en.
+
+* dev.naacl contains manual word alignments for the sentences in the development set.
+
+Manual alignments are specified one link per line in the following format
+
+```
+LINE EID FID TYPE PROB
+```
+
+where 
+
+* LINE is the line number (starting from 1) that addresses the sentence pair
+* EID is the 1-based position in the English sentence 
+* FID is the 1-based position in the French sentence
+* TYPE either S (sure) or P (probable)
+* PROB the probability of the alignment link
+
+The last two fields are optional, if missing they default to S (sure) and 1.0.
+
+In this format, if something aligns to NULL, it simply does not appear in the file.
+
+# Test data
+
+Exactly the same format as dev. 
+
+# AER script
+
+Compatible with python3

@@ -13,11 +13,11 @@ class EmbedAlign(nn.Module):
     The EmbedAlign model in PyTorch.
     """
 
-    def __init__(self, v_dim_en, v_dim_fr, d_dim, h_dim, neg_dim, pad_index, device):
+    def __init__(self, v_dim_en, v_dim_fr, d_dim, h_dim, neg_dim, pad_index_en, pad_index_fr, device):
         super().__init__()
 
-        self._encoder = Encoder(v_dim_en, h_dim, d_dim, pad_index)
-        self._decoder = Decoder(v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index, device)
+        self._encoder = Encoder(v_dim_en, h_dim, d_dim, pad_index_en)
+        self._decoder = Decoder(v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index_en, pad_index_fr, device)
         self.sparse_params = self._encoder.sparse_params + self._decoder.sparse_params
         self.device = device
         self.standard_normal = Normal(torch.tensor([0.], device=device), torch.tensor([1.], device=device))
@@ -112,15 +112,15 @@ class Decoder(nn.Module):
     The decoder part of EmbedAlign.
     """
 
-    def __init__(self, v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index, device):
+    def __init__(self, v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index_en, pad_index_fr, device):
         super().__init__()
         self.v_dim_en = v_dim_en
         self.v_dim_fr = v_dim_fr
         self.neg_dim = neg_dim
         self.device = device
 
-        self.en_embedding = nn.Embedding(v_dim_en, d_dim, padding_idx=pad_index, sparse=True)
-        self.fr_embedding = nn.Embedding(v_dim_fr, d_dim, padding_idx=pad_index, sparse=True)
+        self.en_embedding = nn.Embedding(v_dim_en, d_dim, padding_idx=pad_index_en, sparse=True)
+        self.fr_embedding = nn.Embedding(v_dim_fr, d_dim, padding_idx=pad_index_fr, sparse=True)
         self.sparse_params = [p for p in self.parameters()]
 
     def forward(self, zs, x_en, x_fr):

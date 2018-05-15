@@ -30,7 +30,7 @@ class SkipGramData(Dataset):
 
 class EmbedAlignData(Dataset):
 
-    def __init__(self, data, pad_index):
+    def __init__(self, data, pad_index_en, pad_index_fr):
         with open(data, 'rb') as f:
             data = msgpack.load(f)
 
@@ -39,8 +39,8 @@ class EmbedAlignData(Dataset):
         self._fr_data = np.array(data[1], dtype=np.int64)
 
         # Mask padding
-        self._en_mask = 1 - (self._en_data == pad_index)
-        self._fr_mask = 1 - (self._fr_data == pad_index)
+        self._en_mask = 1 - (self._en_data == pad_index_en)
+        self._fr_mask = 1 - (self._fr_data == pad_index_fr)
 
         # English sentence length
         self._en_len = np.sum(self._en_mask, axis=1)
