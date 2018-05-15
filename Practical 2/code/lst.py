@@ -18,6 +18,21 @@ def construct_data_path(opt, name):
                     + "_" + str(opt.window_size) + "_" + str(opt.k) + "_" + name + "." + opt.language)
 
 
+def construct_model_path(opt, is_best):
+    if is_best:
+        return osp.join(opt.out_path, opt.dataset, opt.model + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
+                        + "_" + str(opt.window_size) + "_" + str(opt.k) + ".pt")
+    else:
+        return osp.join(opt.out_path, opt.dataset, opt.model + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
+                        + "_" + str(opt.window_size) + "_" + str(opt.k) + "_checkpoint.pt")
+
+
+def load_model(path, model):
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint['state_dict'])
+    return model
+
+
 def lst_preprocess(opt, device):
 
     # Read lst data
@@ -86,6 +101,20 @@ def lst(opt):
     device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
 
     data_in = lst_preprocess(opt, device)
+
+    for model in ["skipgram", "bayesian"]:
+        opt.model = model
+        if opt.model == "skipgram":
+            model = SkipGram(opt.v_dim_en, opt.d_dim, opt.v_dim_en-1).to(device)
+        elif opt.model == "bayesian":
+            model = Bayesian(opt.v_dim_en, opt.d_dim, opt.h_dim, opt.v_dim_en-1).to(device)
+
+        model = load_model(construct_model_path(opt, True), model)
+
+        with open()
+        for data in zip(data_in[2], data_in[3], data_in[4]):
+            embeddings = model.lst_pass(data)
+            scores = distance(embeddings)
 
 
 if __name__ == "__main__":
