@@ -43,9 +43,9 @@ def parse_settings():
                         help='Dimensionality of input layer V.')
     parser.add_argument('--v_dim_fr', type=int, default=10002,
                         help='Dimensionality of input layer V.')
-    parser.add_argument('--d_dim', type=int, default=10,
+    parser.add_argument('--d_dim', type=int, default=100,
                         help='Dimensionality of embedding layer D.')
-    parser.add_argument('--h_dim', type=int, default=12,
+    parser.add_argument('--h_dim', type=int, default=128,
                         help='Dimensionality of hidden layers H.')
     parser.add_argument('--neg_dim', type=int, default=1000)
 
