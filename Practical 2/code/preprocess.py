@@ -45,7 +45,8 @@ class MutableInt(object):
         return self._integer
 
 
-def line_mutate(line, lowercase, dictionary, index_word_map=None, index=None, counter=None, dict_operation="Word Count"):
+def line_mutate(line, lowercase, dictionary, index_word_map=None, index=None, counter=None,
+                dict_operation="Word Count"):
     ##############################################################################################################
     """Function to lowercase all words and strip '\r' and '\n' symbols. Also, implicitly counts word frequency."""
     ##############################################################################################################
@@ -208,56 +209,150 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
                                       str(k) + "_" + "indexWordMap" + path_to_data[-3:], "wb"), use_bin_type=True)
 
 
-def damned_experimental_subsampler():
-    '''This is an experimental "dirty" (as per Omar Levy) subsampler.'''
-    '''It appears to get very similar dropping probabilities for corpora with different sizes.'''
-    # ordered_counts = sorted(word_count.items(), key=operator.itemgetter(1), reverse=True)
-    # max_count = ordered_counts[0][1]
-    #
-    # unigram_probablities = {}
-    # for word in word_count:
-    #     unigram_probablities[word] = word_count[word] / total_number_of_words
-    #
-    # ordered_unigram_probabilities = sorted(unigram_probablities.items(), key=operator.itemgetter(1), reverse=True)
-    #
-    # total_count_most_frequent_words = 0
-    # words_above_threshold = []
-    # for unigram_probability in ordered_unigram_probabilities:
-    #     if (unigram_probability[1] >= threshold):
-    #         total_count_most_frequent_words += word_count[unigram_probability[0]]
-    #         words_above_threshold.append(unigram_probability[0])
-    #         min_count = word_count[unigram_probability[0]]
-    #     else:
-    #         break
-    #
-    # word_drop_out_prob = {}
-    # for word in word_count:
-    #     if (word in words_above_threshold):  # TODO: Maybe just set it to 1?
-    #         word_drop_out_prob[word] = (word_count[word] / (
-    #         max_count * (1 + min_count / total_count_most_frequent_words))) ** (
-    #                                    1 / 10)  # TODO: Find an appropriate value
-    #     else:
-    #         word_drop_out_prob[word] = 0
-    #
-    # i = 0
-    # flag = False
-    # for pair in ordered_counts:
-    #     print("Word: " + pair[0] + " ||| Count: " + str(word_count[pair[0]]) + " ||| Dropout prob: " + str(
-    #         word_drop_out_prob[pair[0]]))
-    #     if (word_drop_out_prob[pair[0]] >= 0.2):
-    #         flag = True
-    #     if (flag):
-    #         i += 1
-    #         if (i > 20):
-    #             break
-    raise NotImplementedError()
+# Assumes filenames will be "training.en" and "training.fr"
+def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sentence_size, threshold):
+    ###############################################################################
+    """Loads the english side of the dataset corresponding to the provided path."""
+    ###############################################################################
+
+    '''Load the data.'''
+    print("Loading data...")
+    with open(path_to_data + training_test + ".en", "r", encoding='utf-8') as f:
+        data_lines_en = f.readlines()
+    with open(path_to_data + training_test + ".fr", "r", encoding='utf-8') as f:
+        data_lines_fr = f.readlines()
+    print("Loaded data.\n")
+
+    print("Getting sentences' sizes...")
+    '''Get original dataset sentences' lengths'''
+    lengths_sentences_en = [len(sentence.split(" ")) for sentence in data_lines_en]
+    lengths_sentences_fr = [len(sentence.split(" ")) for sentence in data_lines_fr]
+    print("Got sentences' sizes.\n")
+
+    def basic_line_mutate_vocab_size(line, lowercase, counter=None):
+        '''Split the line on spaces and remove EOL characters from last word.'''
+        line = line.split(" ")
+        line[-1] = line[-1].rstrip("\n").rstrip("\r")
+        if (line[-1] == ""):
+            line = line[:-1]
+
+        '''Lowercase(?) all words in line.'''
+        if (lowercase):
+            line = [word.lower() for word in line]
+
+        if (counter is not None):
+            counter.update(line)
+        
+        return line
+
+    
+    counter_en = Counter()
+    counter_fr = Counter()
+
+    print("Counting words and basic preprocessing...")
+    data_lines_en = [basic_line_mutate_vocab_size(line, lowercase, counter_en) for i, line in enumerate(data_lines_en)
+                     if (lengths_sentences_en[i] <= max_sentence_size and lengths_sentences_fr[i] <= max_sentence_size)]
+    data_lines_fr = [basic_line_mutate_vocab_size(line, lowercase, counter_fr) for i, line in enumerate(data_lines_fr)
+                     if (lengths_sentences_en[i] <= max_sentence_size and lengths_sentences_fr[i] <= max_sentence_size)]
+    print("Counted words and performed basic preprocessing.\n")
+
+    pad_index_en = threshold + 1
+    pad_index_fr = threshold + 1
+    if (threshold == 0):
+        pad_index_en = len(list(counter_en.keys()))
+        pad_index_fr = len(list(counter_fr.keys()))
+    else:
+        print("Determining what to UNK...")
+        ordered_counts_en = counter_en.most_common()
+        to_unk_en = defaultdict(lambda: True)
+        for word, counts in ordered_counts_en[:threshold]:
+            to_unk_en[word] = False
+
+        ordered_counts_fr = counter_fr.most_common()
+        to_unk_fr = defaultdict(lambda: True)
+        for word, counts in ordered_counts_fr[:threshold]:
+            to_unk_fr[word] = False
+        print("Determined what to UNK.\n")
+
+    # TODO: Get correct maximum sentence length, after setting max.
+
+    def ea_line_mutate(line, word_index_map, index_word_map, index, to_unk, pad_index):
+        ##############################################################################################################
+        """Function to lowercase all words and strip '\r' and '\n' symbols. Also, implicitly counts word frequency."""
+        ##############################################################################################################
+
+        '''Indexes all words in the line (implicitly, in the dataset).'''
+        for word in line:
+            if (word not in word_index_map):
+                if (not to_unk[word]):
+                    word_index_map[word] = index.integer
+                    index_word_map.append(word)
+                index.increment_value()
+
+        line = [word_index_map[word] for word in line]
+
+        return line + [pad_index]*(max_sentence_size - len(line))
+
+    '''Apply line_mutate to all lines in the dataset.'''
+    print("Performing last data preprocessing...")
+    word_index_map_en = defaultdict(lambda: threshold)
+    index_word_map_en = []
+    index_en = MutableInt(0)
+    to_unk_en = defaultdict(lambda: False) if threshold == 0 else to_unk_en
+    data_lines_en = [ea_line_mutate(line, word_index_map_en, index_word_map_en, index_en, to_unk_en, pad_index_en)
+                    for line in data_lines_en]
+
+    word_index_map_fr = defaultdict(lambda: threshold)
+    index_word_map_fr = []
+    index_fr = MutableInt(0)
+    to_unk_fr = defaultdict(lambda: False) if threshold == 0 else to_unk_fr
+    data_lines_fr = [ea_line_mutate(line, word_index_map_fr, index_word_map_fr, index_fr, to_unk_fr, pad_index_fr)
+                    for line in data_lines_fr]
+    if (threshold != 0):
+        word_index_map_en["UNK"] = threshold
+        index_word_map_en.append("UNK")
+        word_index_map_fr["UNK"] = threshold
+        index_word_map_fr.append("UNK")
+    print("Performed last data preprocessing.\n")
+
+
+    '''Dump data, word_index_map, index_word_map'''
+
+    print("Saving preprocessed data...")
+
+    '''Datalines both languages.'''
+    msgpack.dump([data_lines_en, data_lines_fr], open(path_to_data + "preprocessed_training_" + str(lowercase) +
+                '_' + str(max_sentence_size) + '_' + str(threshold) + ".both", "wb"), use_bin_type=True)
+
+    # ENGLISH
+    '''Word Index Map'''
+    msgpack.dump(word_index_map_en, open(path_to_data + "wordIndexMap_" + str(lowercase) + '_' + str(max_sentence_size) +
+                '_' + str(threshold) + ".en", "wb"), use_bin_type=True)
+
+    '''Index Word Map.'''
+    msgpack.dump(index_word_map_en, open(path_to_data + "indexWordMap_" + str(lowercase) + '_' + str(max_sentence_size) +
+                '_' + str(threshold) + ".en", "wb"), use_bin_type=True)
+
+    # FRENCH
+    '''Word Index Map'''
+    msgpack.dump(word_index_map_fr, open(path_to_data + "wordIndexMap_" + str(lowercase) + '_' + str(max_sentence_size) +
+                '_' + str(threshold) + ".fr", "wb"), use_bin_type=True)
+
+    '''Index Word Map.'''
+    msgpack.dump(index_word_map_fr, open(path_to_data + "indexWordMap_" + str(lowercase) + '_' + str(max_sentence_size) +
+                '_' + str(threshold) + ".fr", "wb"), use_bin_type=True)
+
+    print("Saved preprocessed data.\n")
 
 
 if __name__ == '__main__':
     opt = parse_settings()
 
-    path_to_data = osp.join(opt.data_path, opt.dataset, 'training.' + opt.language)
+    '''path_to_data = osp.join(opt.data_path, opt.dataset, 'training.' + opt.language)
 
     path_to_data = basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
 
-    preprocess_data_skipgram(path_to_data, opt.window_size, opt.vocab_size + 1, opt.k, opt.save_sequential)
+    preprocess_data_skipgram(path_to_data, opt.window_size, opt.vocab_size + 1, opt.k, opt.save_sequential)'''
+
+    preprocess_data_embedalign(opt.data_path + "/" + opt.dataset + "/", opt.training_test, opt.lowercase,
+                               opt.max_sentence_size, opt.vocab_size)
