@@ -22,7 +22,7 @@ def construct_data_path(opt, name):
 
 
 def construct_data_path_ea(opt, name):
-    return osp.join(opt.data_path, opt.dataset, opt.training_test + "_" + str(bool(opt.lowercase)) + "_" + str(opt.max_sentence_size) + "_" + str(opt.threshold) + "_" + name)
+    return osp.join(opt.data_path, opt.dataset, opt.training_test + "_" + str(bool(opt.lowercase)) + "_" + str(opt.max_sentence_size) + "_" + str(opt.vocab_size) + "_" + name)
 
 
 def construct_model_path(opt, is_best):
@@ -55,7 +55,8 @@ def load_checkpoint(opt, model, optimizers):
 
 def main(opt):
     # We activate the GPU if cuda is available, otherwise computation will be done on cpu
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     print("Using device: {}".format(device))
 
     # Now we load the data fitting the selected model
@@ -74,7 +75,7 @@ def main(opt):
     elif opt.model == "bayesian":
         model = Bayesian(opt.v_dim, opt.d_dim, opt.h_dim, opt.v_dim-1)
     elif opt.model == "embedalign":
-        model = EmbedAlign(opt.v_dim, opt.v_dim, opt.d_dim, opt.h_dim, opt.v_dim-1)
+        model = EmbedAlign(opt.v_dim, opt.v_dim, opt.d_dim, opt.h_dim, opt.neg_dim, opt.v_dim-1, device)
     else:
         raise Exception("Model not recognized, choose [skipgram, bayesian, embedalign]")
 
@@ -100,12 +101,15 @@ def main(opt):
         ep_loss = 0.
         t = 0.
         for j, data_in in enumerate(data):
+            print(torch.max(data_in[0]), torch.max(data_in[3]))
+
             start = time()
             # No longer tedious! Send data to selected device
             data_in = [inp.to(device) for inp in data_in]
 
             # Actual training
             loss = model(data_in)
+
             ep_loss += loss.item()
 
             # Get gradients and update parameters

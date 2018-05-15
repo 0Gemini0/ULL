@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from torch.utils.data import Dataset
 import msgpack
 
@@ -34,15 +35,17 @@ class EmbedAlignData(Dataset):
             data = msgpack.load(f)
 
         # Extract sentences
-        self._en_data = torch.LongTensor([d[0] for d in data])
-        self._fr_data = torch.LongTensor([d[1] for d in data])
+        self._en_data = np.array(data[0], dtype=np.int64)
+        print(np.max(self._en_data))
+        self._fr_data = np.array(data[1], dtype=np.int64)
+        print(np.max(self._fr_data))
 
         # Mask padding
-        self._en_mask = 1 - (self._en_data == pad_index).long()
-        self._fr_mask = 1 - (self._fr_data == pad_index).long()
+        self._en_mask = 1 - (self._en_data == pad_index)
+        self._fr_mask = 1 - (self._fr_data == pad_index)
 
         # English sentence length
-        self._en_len = self._en_mask.sum(dim=1)
+        self._en_len = np.sum(self._en_mask, axis=1)
 
     def __len__(self):
         return self._en_data.shape[0]
@@ -54,17 +57,17 @@ class EmbedAlignData(Dataset):
 def sort_collate(batch):
     """Sort a given batch on its length."""
     # Unpack. Works only with EmbedAlignData
-    en_data = batch[0]
-    en_len = batch[1]
-    en_mask = batch[2]
-    fr_data = batch[3]
-    fr_mask = batch[4]
+    en_data = torch.tensor(np.array([b[0] for b in batch]), dtype=torch.long)
+    en_len = torch.tensor(np.array([b[1] for b in batch]), dtype=torch.long)
+    en_mask = torch.tensor(np.array([b[2] for b in batch]), dtype=torch.long)
+    fr_data = torch.tensor(np.array([b[3] for b in batch]), dtype=torch.long)
+    fr_mask = torch.tensor(np.array([b[4] for b in batch]), dtype=torch.long)
 
     # Get sort indices from the len array
     en_len, indices = torch.sort(en_len, descending=True)
-    en_data = en_len[indices]
+    en_data = en_data[indices]
     en_mask = en_mask[indices]
     fr_data = fr_data[indices]
     fr_mask = fr_mask[indices]
 
-    return (en_data, en_len, en_mask, fr_data, fr_mask)
+    return [en_data, en_len, en_mask, fr_data, fr_mask]

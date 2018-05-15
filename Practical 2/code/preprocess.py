@@ -319,25 +319,25 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
     print("Saving preprocessed data...")
 
     '''Datalines both languages.'''
-    msgpack.dump([data_lines_en, data_lines_fr], open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+    msgpack.dump([data_lines_en, data_lines_fr], open(path_to_data + "/" + training_test + "_" + str(bool(lowercase)) +
                                                       '_' + str(max_sentence_size) + '_' + str(threshold) + "_data.both", "wb"), use_bin_type=True)
 
     # ENGLISH
     '''Word Index Map'''
-    msgpack.dump(word_index_map_en, open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+    msgpack.dump(word_index_map_en, open(path_to_data + "/" + training_test + "_" + str(bool(lowercase)) +
                                          '_' + str(max_sentence_size) + '_' + str(threshold) + "_wordIndexMap.en", "wb"), use_bin_type=True)
 
     '''Index Word Map.'''
-    msgpack.dump(index_word_map_en, open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+    msgpack.dump(index_word_map_en, open(path_to_data + "/" + training_test + "_" + str(bool(lowercase)) +
                                          '_' + str(max_sentence_size) + '_' + str(threshold) + "_indexWordMap.en", "wb"), use_bin_type=True)
 
     # FRENCH
     '''Word Index Map'''
-    msgpack.dump(word_index_map_fr, open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+    msgpack.dump(word_index_map_fr, open(path_to_data + "/" + training_test + "_" + str(bool(lowercase)) +
                                          '_' + str(max_sentence_size) + '_' + str(threshold) + "_wordIndexMap.fr", "wb"), use_bin_type=True)
 
     '''Index Word Map.'''
-    msgpack.dump(index_word_map_fr, open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+    msgpack.dump(index_word_map_fr, open(path_to_data + "/" + training_test + "_" + str(bool(lowercase)) +
                                          '_' + str(max_sentence_size) + '_' + str(threshold) + "_indexWordMap.fr", "wb"), use_bin_type=True)
 
     print("Saved preprocessed data.\n")
