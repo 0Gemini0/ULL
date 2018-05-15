@@ -26,12 +26,12 @@ class SkipGram(nn.Module):
         self.context_embedding = nn.Embedding(v_dim, d_dim, padding_idx=pad_index, sparse=True)
         self.sparse_params = [p for p in self.parameters()]
 
-    def forward(self, center, pos_c, neg_c, mask):
+    def forward(self, data_in):
         """Compute the positive and negative score of a batch of center words based on context, return them as loss."""
         # Embed; center should be [B], pos_c should be [B x W], neg_c should be [B x K * W]
-        center = self.center_embedding(center)
-        pos_c = self.context_embedding(pos_c)
-        neg_c = self.context_embedding(neg_c)
+        center = self.center_embedding(data_in[0])
+        pos_c = self.context_embedding(data_in[1])
+        neg_c = self.context_embedding(data_in[2])
 
         # For efficient matrix multiplication with bmm, we add an extra singleton dimension to the center word embeddings
         center = center.unsqueeze(2)
@@ -43,4 +43,4 @@ class SkipGram(nn.Module):
         neg_scores = F.logsigmoid(torch.bmm(-neg_c, center).squeeze()).sum(dim=1)
 
         # Directly return the loss, i.e. the negative normalized sum of the positive and negative 'score'
-        return -(pos_scores + neg_scores) / pos_scores.shape[0]
+        return -(pos_scores + neg_scores).sum() / pos_scores.shape[0]

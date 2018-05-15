@@ -22,25 +22,29 @@ class EmbedAlign(nn.Module):
         self.sparse_params = self._encoder.sparse_params + self._decoder.sparse_params
         self.device = device
 
-    def forward(self, x_en, x_fr, en_mask, fr_mask, en_len):
-        # Encode the english sentence into Gaussian parameters
-        mus, sigmas = self._encoder(x_en, en_len)
+    def forward(self, data_in):
+        x_en = data_in[0]
+        en_len = data_in[1]
+        en_mask = data_in[2]
+        x_fr = data_in[3]
+        fr_mask = data_in[4]
 
-        # Sample zs from the Gaussians with reparametrization
+        # Encode the english sentence into Gaussian parameters and sample zs with reparametrization
+        mus, sigmas = self._encoder(x_en, en_len)
         zs = self._sample(mus, sigmas)
 
         # Decode the samples into estimated word and alignment probabilities with CSS
         en_probs, fr_probs = self._decoder(zs, x_en, x_fr)
 
-        # Sum french probs, take log, mask, and sum some more, yielding the reconstruction loss per sentence. Alos get the english log probs, masked
+        # Sum french probs, take log, mask, and sum some more, yielding the reconstruction loss per sentence. Also get the english log probs, masked
         en_log_probs = torch.log(en_probs) * en_mask
-        fr_rec_loss = (torch.log(fr_probs.sum(dim=2)) * fr_mask).sum(dim=1) / en_len
+        fr_rec_loss = (torch.log(fr_probs.sum(dim=2)) * fr_mask.float()).sum(dim=1) / en_len
 
         # Compute KL part of the loss, masked for padding
-        kl = self._kl_divergence(mus, sigmas) * en_mask
+        kl = self._kl_divergence(mus, sigmas) * en_mask.float()
 
         # Return final ELBO, averaged over the minibatch
-        return (fr_rec_loss + (en_log_probs - kl * en_mask).sum(dim=1)).sum() / x_en.shape[0]
+        return (fr_rec_loss + (en_log_probs - kl * en_mask.float()).sum(dim=1)).sum() / x_en.shape[0]
 
     def get_alignments(self, x_en, x_fr, en_mask, fr_mask):
         """Using parts of the forward pass we can extract predicted alignments from the model."""

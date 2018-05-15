@@ -28,8 +28,13 @@ class Bayesian(nn.Module):
         self.standard_normal = Normal(torch.Tensor([0.0]), torch.Tensor([1.0]))
         self.sparse_params = self.prior.sparse_params + self.posterior.sparse_params
 
-    def forward(self, center, pos_c, neg_c, mask, margin=1.0):
+    def forward(self, data_in, margin=1.0):
         """The model samples an encoding from the posterior."""
+        center = data_in[0]
+        pos_c = data_in[1]
+        neg_c = data_in[2]
+        mask = data_in[3]
+
         # Sample mean and sigma from the posterior of central word based on its true context
         mu_posterior, sigma_posterior = self.posterior(center, pos_c, mask)
         mu_prior_cen, sigma_prior_cen = self.prior(center)

@@ -94,17 +94,14 @@ def main(opt):
     best_loss = np.inf
     for i in range(opt.num_epochs):
         ep_loss = 0.
-        for j, (center, pos_context, pos_mask, neg_context, neg_mask) in enumerate(data):
+        t = 0.
+        for j, input in enumerate(data):
             start = time()
             # No longer tedious! Send data to selected device
-            center = center.to(device)
-            pos_context = pos_context.to(device)
-            pos_mask = pos_mask.to(device)
-            neg_context = neg_context.to(device)
-            neg_mask = neg_mask.to(device)
+            input = [inp.to(device) for inp in input]
 
             # Actual training
-            loss = torch.sum(model(center, pos_context, neg_context, pos_mask))
+            loss = model(input)
             ep_loss += loss.item()
 
             # Get gradients and update parameters
@@ -117,18 +114,19 @@ def main(opt):
             # See progress
             if j % 1000 == 0:
                 print("\rSteps this epoch: {}, time: {}s, loss: {}".format(
-                    j, time() - start, loss.item()), end="", flush=True)
+                    j, t, loss.item()), end="", flush=True)
 
-        if ep_loss < best_loss:
-            best_loss = ep_loss
+            t += time() - start
+
+        avg_loss = ep_loss/j
+        if avg_loss < best_loss:
+            best_loss = avg_loss
             is_best = True
-        losses.append(ep_loss)
+        losses.append(avg_loss)
 
         # Save_checkpoint
         save_checkpoint(opt, model, optimizers, i, losses, is_best)
-
-        print("Epoch: {}, Average Loss: {}".format(i, ep_loss/j))
-
+        print("Epoch: {}, Average Loss: {}".format(i, avg_loss))
         is_best = False
 
 

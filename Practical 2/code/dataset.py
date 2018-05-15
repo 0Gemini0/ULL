@@ -16,17 +16,15 @@ class SkipGramData(Dataset):
         self._pos_context = torch.LongTensor([data[1][0] + data[1][1] for data in positive_data])
         self._neg_context = torch.LongTensor([data[1] for data in negative_data])
 
-        # Mask padding
+        # Mask padding, when k is one pos and neg will have the same mask
         self._pos_mask = 1 - (self._pos_context == pad_index).long()
         self._neg_mask = 1 - (self._neg_context == pad_index).long()
-
-        print(sum(sum(self._pos_mask - self._neg_mask)))
 
     def __len__(self):
         return self._center.shape[0]
 
     def __getitem__(self, idx):
-        return self._center[idx], self._pos_context[idx], self._pos_mask[idx], self._neg_context[idx], self._neg_mask[idx]
+        return self._center[idx], self._pos_context[idx], self._neg_context[idx], self._pos_mask[idx], self._neg_mask[idx]
 
 
 class EmbedAlignData(Dataset):
