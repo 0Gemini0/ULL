@@ -55,8 +55,8 @@ def load_checkpoint(opt, model, optimizers):
 
 def main(opt):
     # We activate the GPU if cuda is available, otherwise computation will be done on cpu
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu")
     print("Using device: {}".format(device))
 
     # Now we load the data fitting the selected model
@@ -101,8 +101,6 @@ def main(opt):
         ep_loss = 0.
         t = 0.
         for j, data_in in enumerate(data):
-            print(torch.max(data_in[0]), torch.max(data_in[3]))
-
             start = time()
             # No longer tedious! Send data to selected device
             data_in = [inp.to(device) for inp in data_in]
@@ -120,9 +118,9 @@ def main(opt):
                 optimizer.step()
 
             # See progress
-            if j % 1000 == 0:
-                print("\rSteps this epoch: {}, time: {}s, loss: {}".format(
-                    j, t, loss.item()), end="", flush=True)
+            if j % 10 == 0:
+                print("\rSteps this epoch: {}, time: {}s, avg_loss: {}".format(
+                    j, t, ep_loss/j), end="", flush=True)
 
             t += time() - start
 

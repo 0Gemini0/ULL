@@ -282,10 +282,9 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
 
         '''Indexes all words in the line (implicitly, in the dataset).'''
         for word in line:
-            if (word not in word_index_map):
-                if (not to_unk[word]):
-                    word_index_map[word] = index.integer
-                    index_word_map.append(word)
+            if (word not in word_index_map) and (not to_unk[word]):
+                word_index_map[word] = index.integer
+                index_word_map.append(word)
                 index.increment_value()
 
         line = [word_index_map[word] for word in line]

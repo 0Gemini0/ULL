@@ -36,9 +36,7 @@ class EmbedAlignData(Dataset):
 
         # Extract sentences
         self._en_data = np.array(data[0], dtype=np.int64)
-        print(np.max(self._en_data))
         self._fr_data = np.array(data[1], dtype=np.int64)
-        print(np.max(self._fr_data))
 
         # Mask padding
         self._en_mask = 1 - (self._en_data == pad_index)

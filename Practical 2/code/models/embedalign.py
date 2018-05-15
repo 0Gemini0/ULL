@@ -44,7 +44,7 @@ class EmbedAlign(nn.Module):
         kl = self._kl_divergence(mus, sigmas) * en_mask.float()
 
         # Return final ELBO, averaged over the minibatch
-        return (fr_rec_loss + (en_log_probs - kl * en_mask.float()).sum(dim=1)).sum() / x_en.shape[0]
+        return -(fr_rec_loss + (en_log_probs - kl * en_mask.float()).sum(dim=1)).sum() / x_en.shape[0]
 
     def get_alignments(self, x_en, x_fr, en_mask, fr_mask):
         """Using parts of the forward pass we can extract predicted alignments from the model."""
@@ -147,7 +147,6 @@ class Decoder(nn.Module):
 
         # TODO: stable exponentials
         if language == "en":
-            print(z.shape, batch_embeddings.shape)
             batch_score = torch.exp((z * batch_embeddings).sum(dim=2))
         else:
             batch_score = torch.exp(torch.bmm(batch_embeddings, z.transpose(1, 2)))
