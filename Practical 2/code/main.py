@@ -17,8 +17,12 @@ from models.embedalign import EmbedAlign
 
 
 def construct_data_path(opt, name):
-    return osp.join(opt.data_path, opt.dataset, "training_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
+    return osp.join(opt.data_path, opt.dataset, opt.training_test + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
                     + "_" + str(opt.window_size) + "_" + str(opt.k) + "_" + name + "." + opt.language)
+
+
+def construct_data_path_ea(opt, name):
+    return osp.join(opt.data_path, opt.dataset, opt.training_test + "_" + str(bool(opt.lowercase)) + "_" + str(opt.max_sentence_size) + "_" + str(opt.threshold) + "_" + name)
 
 
 def construct_model_path(opt, is_best):
@@ -57,12 +61,11 @@ def main(opt):
     # Now we load the data fitting the selected model
     print("Loading Data...")
     if opt.model == "embedalign":
-        data = DataLoader(EmbedAlignData(construct_data_path(opt, "sentences"), opt.v_dim - 1),
+        data = DataLoader(EmbedAlignData(construct_data_path_ea(opt, "data.both"), opt.v_dim - 1),
                           batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True, collate_fn=sort_collate)
     else:
         data = DataLoader(SkipGramData(construct_data_path(opt, "samples"), construct_data_path(opt, "negativeSamples"),
                                        opt.v_dim - 1), batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    idx_to_word = msgpack.load(open(construct_data_path(opt, "indexWordMap"), 'rb'), encoding='utf-8')
     print("Data was succesfully loaded.")
 
     # We load the selected model and place it on the available device(s)
@@ -96,13 +99,13 @@ def main(opt):
     for i in range(opt.num_epochs):
         ep_loss = 0.
         t = 0.
-        for j, input in enumerate(data):
+        for j, data_in in enumerate(data):
             start = time()
             # No longer tedious! Send data to selected device
-            input = [inp.to(device) for inp in input]
+            data_in = [inp.to(device) for inp in data_in]
 
             # Actual training
-            loss = model(input)
+            loss = model(data_in)
             ep_loss += loss.item()
 
             # Get gradients and update parameters

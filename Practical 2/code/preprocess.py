@@ -242,10 +242,9 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
 
         if (counter is not None):
             counter.update(line)
-        
+
         return line
 
-    
     counter_en = Counter()
     counter_fr = Counter()
 
@@ -300,14 +299,14 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
     index_en = MutableInt(0)
     to_unk_en = defaultdict(lambda: False) if threshold == 0 else to_unk_en
     data_lines_en = [ea_line_mutate(line, word_index_map_en, index_word_map_en, index_en, to_unk_en, pad_index_en)
-                    for line in data_lines_en]
+                     for line in data_lines_en]
 
     word_index_map_fr = defaultdict(lambda: threshold)
     index_word_map_fr = []
     index_fr = MutableInt(0)
     to_unk_fr = defaultdict(lambda: False) if threshold == 0 else to_unk_fr
     data_lines_fr = [ea_line_mutate(line, word_index_map_fr, index_word_map_fr, index_fr, to_unk_fr, pad_index_fr)
-                    for line in data_lines_fr]
+                     for line in data_lines_fr]
     if (threshold != 0):
         word_index_map_en["UNK"] = threshold
         index_word_map_en.append("UNK")
@@ -315,32 +314,31 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
         index_word_map_fr.append("UNK")
     print("Performed last data preprocessing.\n")
 
-
     '''Dump data, word_index_map, index_word_map'''
 
     print("Saving preprocessed data...")
 
     '''Datalines both languages.'''
-    msgpack.dump([data_lines_en, data_lines_fr], open(path_to_data + "preprocessed_training_" + str(lowercase) +
-                '_' + str(max_sentence_size) + '_' + str(threshold) + ".both", "wb"), use_bin_type=True)
+    msgpack.dump([data_lines_en, data_lines_fr], open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+                                                      '_' + str(max_sentence_size) + '_' + str(threshold) + "_data.both", "wb"), use_bin_type=True)
 
     # ENGLISH
     '''Word Index Map'''
-    msgpack.dump(word_index_map_en, open(path_to_data + "wordIndexMap_" + str(lowercase) + '_' + str(max_sentence_size) +
-                '_' + str(threshold) + ".en", "wb"), use_bin_type=True)
+    msgpack.dump(word_index_map_en, open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+                                         '_' + str(max_sentence_size) + '_' + str(threshold) + "_wordIndexMap.en", "wb"), use_bin_type=True)
 
     '''Index Word Map.'''
-    msgpack.dump(index_word_map_en, open(path_to_data + "indexWordMap_" + str(lowercase) + '_' + str(max_sentence_size) +
-                '_' + str(threshold) + ".en", "wb"), use_bin_type=True)
+    msgpack.dump(index_word_map_en, open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+                                         '_' + str(max_sentence_size) + '_' + str(threshold) + "_indexWordMap.en", "wb"), use_bin_type=True)
 
     # FRENCH
     '''Word Index Map'''
-    msgpack.dump(word_index_map_fr, open(path_to_data + "wordIndexMap_" + str(lowercase) + '_' + str(max_sentence_size) +
-                '_' + str(threshold) + ".fr", "wb"), use_bin_type=True)
+    msgpack.dump(word_index_map_fr, open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+                                         '_' + str(max_sentence_size) + '_' + str(threshold) + "_wordIndexMap.fr", "wb"), use_bin_type=True)
 
     '''Index Word Map.'''
-    msgpack.dump(index_word_map_fr, open(path_to_data + "indexWordMap_" + str(lowercase) + '_' + str(max_sentence_size) +
-                '_' + str(threshold) + ".fr", "wb"), use_bin_type=True)
+    msgpack.dump(index_word_map_fr, open(path_to_data + "/" + training_test + "_" + str(lowercase) +
+                                         '_' + str(max_sentence_size) + '_' + str(threshold) + "_indexWordMap.fr", "wb"), use_bin_type=True)
 
     print("Saved preprocessed data.\n")
 
