@@ -15,6 +15,8 @@ def parse_settings():
                         help="Path to folder containing datasets.")
     parser.add_argument('--dataset', type=str, default='hansards',
                         help='Which dataset to load, choose [hansards, europarl]')
+    parser.add_argument('--training_test', type=str, default='training',
+                        help='Which dataset to load, choose [training, test]')
     parser.add_argument('--language', type=str, default='en',
                         help='Language to preprocess. Choose [en, fr]')
 
@@ -27,6 +29,8 @@ def parse_settings():
                         help="Amount of negative samples per positive sample.")
     parser.add_argument('--window_size', type=int, default=2,
                         help="Size of context window around central word.")
+    parser.add_argument('--max_sentence_size', type=int, default=20,
+                        help='Maximum sentence size (int).')
     parser.add_argument('--save_sequential', type=int, default=0,
                         help='Whether to save sequentially. Choose [0, 1].')
 
