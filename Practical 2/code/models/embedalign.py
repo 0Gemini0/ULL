@@ -22,19 +22,53 @@ class EmbedAlign(nn.Module):
         self.sparse_params = self._encoder.sparse_params + self._decoder.sparse_params
         self.device = device
 
-    def forward(self, center, pos_c, mask):
-        mus, sigmas = self._encoder(x)
+    def forward(self, x_en, x_fr, en_mask, fr_mask):
+        # Encode the english sentence into Gaussian parameters
+        mus, sigmas = self._encoder(x_en)
+
+        # Sample zs from the Gaussians with reparametrization
         zs = self._sample(mus, sigmas)
-        en_preds, fr_preds = self._decoder(zs)
+
+        # Decode the samples into estimated word and alignment probabilities with CSS
+        en_probs, fr_probs = self._decoder(zs, x_en, x_fr)
+
+        # Sum french probs, take log, mask, and sum some more, yielding the reconstruction loss per sentence. Alos get the english log probs, masked
+        en_log_probs = torch.log(en_probs) * en_mask
+        fr_rec_loss = (torch.log(fr_probs.sum(dim=2)) * fr_mask).sum(dim=1)
+
+        # Compute KL part of the loss, masked for padding
+        kl = self._kl_divergence(mus, sigmas) * en_mask
+
+        # Return final ELBO, averaged over the minibatch
+        return (fr_rec_loss + (en_log_probs - kl * en_mask).sum(dim=1)).sum() / x_en.shape[0]
+
+    def get_alignments(self, x_en, x_fr, en_mask, fr_mask):
+        """Using parts of the forward pass we can extract predicted alignments from the model."""
+        # Encode the english sentence to Gaussian parameters
+        mus, sigmas = self._encoder(x_en)
+
+        # Sample zs from the Gaussians with reparametrization
+        zs = self._sample(mus, sigmas)
+
+        # Decode the samples into estimated word and alignment probabilities with CSS
+        en_probs, fr_probs = self._decoder(zs, x_en, x_fr, en_mask, fr_mask)
+
+        # TODO: transform fr_probs into alignments
 
     def _sample(self, mu, sigma):
         """Reparameterized sampling from a Gaussian density."""
         return mu + sigma * self.standard_normal.sample_n(mu.shape)
 
+    def _kl_divergence(self, mu, sigma):
+        """
+        Batch wise computation of KL divergence between diagonal Gaussian and Unit Gaussian.
+        """
+        return -0.5 * (torch.log(sigma) ** 2 - sigma ** 2 - mu + 1).sum(dim=2)
+
 
 class Encoder(nn.Module):
     """
-    The encoder part of EMBEDALIGN.
+    The encoder part of EmbedAlign.
     """
 
     def __init__(self, v_dim_en, h_dim, d_dim, pad_index):
@@ -63,14 +97,12 @@ class Encoder(nn.Module):
         sigmas = F.softplus(self._sig_proj(h_sum))
         # [B x S x D]
 
-        # TODO: Mask here?
-
         return mus, sigmas
 
 
 class Decoder(nn.Module):
     """
-    The decoder part of EMBEDALIGN.
+    The decoder part of EmbedAlign.
     """
 
     def __init__(self, v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index, device):
@@ -84,18 +116,12 @@ class Decoder(nn.Module):
         self.fr_embedding = nn.Embedding(v_dim_fr, d_dim, padding_idx=pad_index, sparse=True)
         self.sparse_params = [p for p in self.parameters()]
 
-    def forward(self, zs, x_en, x_fr, en_mask, fr_mask):
+    def forward(self, zs, x_en, x_fr):
         # Use complementary sum sampling to approximate the probabilities of the french and english sentences given z
         en_probs = self._css(x_en, self.v_dim_en, self.neg_dim, self.en_embedding, zs, "en")
         fr_probs = self._css(x_fr, self.v_dim_fr, self.neg_dim, self.fr_embedding, zs, "fr")
 
-        # Sum the english word log probs over sentences, after masking, yielding the reconstruction loss per sentence
-        en_rec_loss = (torch.log(en_probs) * en_mask).sum(dim=1)
-
-        # Sum french probs, take log, mask, and sum some more, yielding the reconstruction loss per sentence
-        fr_rec_loss = (torch.log(fr_probs.sum(dim=2)) * fr_mask).sum(dim=1)
-
-        return en_rec_loss, fr_rec_loss
+        return en_probs, fr_probs
 
     def _css(self, x, v_dim, num, embedding, z, language):
         """Generate a negative set without replacement for CSS given a batch as positive set."""
