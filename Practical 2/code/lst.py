@@ -18,9 +18,7 @@ def construct_data_path(opt, name):
                     + "_" + str(opt.window_size) + "_" + str(opt.k) + "_" + name + "." + opt.language)
 
 
-def lst(opt):
-    # GPU or CPU selection
-    device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
+def lst_preprocess(opt, device):
 
     # Read lst data
     with open(osp.join(opt.lst_path, 'lst_test.preprocessed'), 'r') as f:
@@ -28,7 +26,6 @@ def lst(opt):
 
     # Open word to index dictionary
     word_to_idx = msgpack.load(open(construct_data_path(opt, "wordIndexMap"), 'rb'), encoding='utf-8')
-    idx_to_word = msgpack.load(open(construct_data_path(opt, "indexWordMap"), 'rb'), encoding='utf-8')
 
     with open(osp.join(opt.lst_path, 'lst.gold.candidates'), 'r') as f:
         target_candidates = f.read().splitlines()
@@ -81,12 +78,14 @@ def lst(opt):
         context_iterator.append(torch.tensor(context, device=device, dtype=torch.long))
         context_mask_iterator.append(torch.tensor(1 - (context == pad_index), device=device, dtype=torch.long))
 
-    print(len(sentence_iterator), sentence_iterator[0].shape)
-    print(sentence_iterator[0].shape,
-          len_iterator[0].shape,
-          context_iterator[0].shape,
-          context_mask_iterator[0].shape,
-          center_iterator[0].shape)
+    return sentence_iterator, len_iterator, center_iterator, context_iterator, context_mask_iterator
+
+
+def lst(opt):
+    # GPU or CPU selection
+    device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
+
+    data_in = lst_preprocess(opt, device)
 
 
 if __name__ == "__main__":
