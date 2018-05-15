@@ -13,6 +13,7 @@ from settings import parse_settings
 from dataset import SkipGramData, EmbedAlignData, sort_collate
 from models.skipgram import SkipGram
 from models.bayesian import Bayesian
+from models.embedalign import EmbedAlign
 
 
 def construct_data_path(opt, name):
