@@ -95,10 +95,13 @@ def basic_dataset_preprocess(path_to_data, threshold=10000, lowercase=True):
     '''Specify which words will UNKed and which won't.'''
     to_UNK_dict = {}
     for i, pair in enumerate(ordered_counts):
-        if (i < threshold):
-            to_UNK_dict[pair[0]] = pair[0]
+        if (threshold != 0):
+            if (i < threshold):
+                to_UNK_dict[pair[0]] = pair[0]
+            else:
+                to_UNK_dict[pair[0]] = "UNK"
         else:
-            to_UNK_dict[pair[0]] = "UNK"
+            to_UNK_dict[pair[0]] = pair[0]
 
     '''Save the UNKed (on threshold) and lowercased(?) dataset to file.'''
     filename = path_to_data[0:-3] + "_" + str(threshold) + "_" + str(bool(lowercase)) + path_to_data[-3:]
@@ -216,7 +219,7 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
     ###############################################################################
 
     '''Load the data.'''
-    print("Loading data...")
+    print("\n\nPreprocessing for embedalign. \nLoading data...")
     with open(path_to_data + training_test + ".en", "r", encoding='utf-8') as f:
         data_lines_en = f.readlines()
     with open(path_to_data + training_test + ".fr", "r", encoding='utf-8') as f:
@@ -345,11 +348,11 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
 if __name__ == '__main__':
     opt = parse_settings()
 
-    '''path_to_data = osp.join(opt.data_path, opt.dataset, 'training.' + opt.language)
+    path_to_data = osp.join(opt.data_path, opt.dataset, opt.training_test + opt.language)
 
     path_to_data = basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
 
-    preprocess_data_skipgram(path_to_data, opt.window_size, opt.vocab_size + 1, opt.k, opt.save_sequential)'''
+    preprocess_data_skipgram(path_to_data, opt.window_size, opt.vocab_size + 1, opt.k, opt.save_sequential)
 
     preprocess_data_embedalign(opt.data_path + "/" + opt.dataset + "/", opt.training_test, opt.lowercase,
                                opt.max_sentence_size, opt.vocab_size)

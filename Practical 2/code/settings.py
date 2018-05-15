@@ -19,8 +19,8 @@ def parse_settings():
                         help='Which dataset to load, choose [hansards, europarl]')
     parser.add_argument('--training_test', type=str, default='training',
                         help='Which dataset to load, choose [training, test]')
-    parser.add_argument('--language', type=str, default='en',
-                        help='Language to preprocess. Choose [en, fr]')
+    parser.add_argument('--language', type=str, default='.en',
+                        help='Language to preprocess. Choose [.en, .fr]')
 
     # Preprocessing
     parser.add_argument('--vocab_size', type=int, default=10000,
@@ -29,7 +29,7 @@ def parse_settings():
                         help="Whether the dataset is/should be lowercased. Choose [0, 1]")
     parser.add_argument('--k', type=int, default=1,
                         help="Amount of negative samples per positive sample.")
-    parser.add_argument('--window_size', type=int, default=2,
+    parser.add_argument('--window_size', type=int, default=5,
                         help="Size of context window around central word.")
     parser.add_argument('--max_sentence_size', type=int, default=20,
                         help='Maximum sentence size (int).')
