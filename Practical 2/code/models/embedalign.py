@@ -22,9 +22,9 @@ class EmbedAlign(nn.Module):
         self.sparse_params = self._encoder.sparse_params + self._decoder.sparse_params
         self.device = device
 
-    def forward(self, x_en, x_fr, en_mask, fr_mask):
+    def forward(self, x_en, x_fr, en_mask, fr_mask, en_len):
         # Encode the english sentence into Gaussian parameters
-        mus, sigmas = self._encoder(x_en)
+        mus, sigmas = self._encoder(x_en, en_len)
 
         # Sample zs from the Gaussians with reparametrization
         zs = self._sample(mus, sigmas)
@@ -34,7 +34,7 @@ class EmbedAlign(nn.Module):
 
         # Sum french probs, take log, mask, and sum some more, yielding the reconstruction loss per sentence. Alos get the english log probs, masked
         en_log_probs = torch.log(en_probs) * en_mask
-        fr_rec_loss = (torch.log(fr_probs.sum(dim=2)) * fr_mask).sum(dim=1)
+        fr_rec_loss = (torch.log(fr_probs.sum(dim=2)) * fr_mask).sum(dim=1) / en_len
 
         # Compute KL part of the loss, masked for padding
         kl = self._kl_divergence(mus, sigmas) * en_mask
@@ -51,9 +51,12 @@ class EmbedAlign(nn.Module):
         zs = self._sample(mus, sigmas)
 
         # Decode the samples into estimated word and alignment probabilities with CSS
-        en_probs, fr_probs = self._decoder(zs, x_en, x_fr, en_mask, fr_mask)
+        _, fr_probs = self._decoder(zs, x_en, x_fr, en_mask, fr_mask)
 
-        # TODO: transform fr_probs into alignments
+        # Transform fr_probs into alignments
+        _, alignments = torch.max(fr_probs, dim=2)
+
+        return alignments
 
     def _sample(self, mu, sigma):
         """Reparameterized sampling from a Gaussian density."""
@@ -63,7 +66,7 @@ class EmbedAlign(nn.Module):
         """
         Batch wise computation of KL divergence between diagonal Gaussian and Unit Gaussian.
         """
-        return -0.5 * (torch.log(sigma) ** 2 - sigma ** 2 - mu + 1).sum(dim=2)
+        return -0.5 * (2 * torch.log(sigma) - sigma ** 2 - mu ** 2 + 1).sum(dim=2)
 
 
 class Encoder(nn.Module):
