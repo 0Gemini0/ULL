@@ -191,6 +191,49 @@ def lst(opt):
                 write_list(kl_file, data, kl_scores, kl_indices, opt.model, idx_to_word)
 
 
+def cosine_distance(target_candidates):
+    # Normalise embeddings.
+    target_candidates = f.normalize(c, p=1, dim=1)
+
+    # Get target and substitution candidates.
+    target = target_candidates[0]
+    candidates = target_candidates[1:]
+
+    # Compute inner product. Due to the vectors being normalised it is the same as cosine distance.
+    inner_prod = candidates.mm(target.unsqueeze(1))
+
+    # Sort results on similarity and get the correct indices
+    sorted_values = torch.sort(inner_prod.squeeze(), descending=True))
+    sorted_values_indices = (sorted_values[0], sorted_values[1] + 1)
+
+    return sorted_values_indices
+
+def KL_distance(tuple_means_sigmas):
+    # Get target and substitution candidates.
+    target_mean = tuple_means_sigmas[0][0]
+    candidates_means = tuple_means_sigmas[0][1:]
+    target_sigma = tuple_means_sigmas[1][0]
+    candidates_sigmas = tuple_means_sigmas[1][1:]
+
+    # Compute the logarithms of the determinants
+    logs = torch.log(torch.prod(candidates_sigmas, dim=1)/torch.prod(target_sigma))
+
+    # Compute the trace of candidates' cov inverses dot target cov
+    traces = torch.sum(torch.mm(1.0/candidates_sigmas, target_sigma.unsqueeze(1)), dim=1)
+
+    # Compute inner products wrt sigmas
+    torch.sum((target_mean-candidates_means)*candidates_sigmas*(target_mean-candidates_means), dim=1)
+
+    # Compute final KLs
+    KLs = 0.5*(logs - target_mean.shape[0] + traces + inner_products_wrt_sigmas)
+
+    # Sort results on KL divergences and get the correct indices
+    sorted_values = torch.sort(KLs.squeeze(), descending=True))
+    sorted_values_indices = (sorted_values[0], sorted_values[1] + 1)
+
+    return sorted_values_indices
+
+
 if __name__ == "__main__":
     opt = parse_settings()
 
