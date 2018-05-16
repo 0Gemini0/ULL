@@ -147,7 +147,7 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
     '''Correct Pad Index'''
     if pad_index == 1:
         pad_index = len(list(counter.keys()))
-        mspack.dump(pad_index, open(osp.join(opt.data_path, opt.dataset, "pad_index_skipgram.en"). 'wb'))
+        msgpack.dump(pad_index, open(osp.join(opt.data_path, opt.dataset, "pad_index_skipgram.en"), 'wb'))
 
     '''Extra function for helping compute negative samples.'''
     def get_samples_from_multinomial(counts):
@@ -279,10 +279,10 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
     if (threshold == 0):
         pad_index_en = len(list(counter_en.keys()))
         pad_index_fr = len(list(counter_fr.keys()))
-        mspack.dump(pad_index_en, open(osp.join(opt.data_path, opt.dataset,
-                                                "pad_index_embedalign_{}.en".format(opt.max_sentence_size)), 'wb'))
-        mspack.dump(pad_index_fr, open(osp.join(opt.data_path, opt.dataset,
-                                                "pad_index_embedalign_{}.fr".format(opt.max_sentence_size)), 'wb'))
+        msgpack.dump(pad_index_en, open(osp.join(opt.data_path, opt.dataset,
+                                                 "pad_index_embedalign_{}.en".format(opt.max_sentence_size)), 'wb'))
+        msgpack.dump(pad_index_fr, open(osp.join(opt.data_path, opt.dataset,
+                                                 "pad_index_embedalign_{}.fr".format(opt.max_sentence_size)), 'wb'))
     else:
         print("Determining what to UNK...")
         ordered_counts_en = counter_en.most_common()

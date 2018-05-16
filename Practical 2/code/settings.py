@@ -23,7 +23,7 @@ def parse_settings():
                         help='Language to preprocess. Choose [.en, .fr]')
 
     # Preprocessing
-    parser.add_argument('--vocab_size', type=int, default=10000,
+    parser.add_argument('--vocab_size', type=int, default=0,
                         help="Size of vocalubary.")
     parser.add_argument('--lowercase', type=int, default=1,
                         help="Whether the dataset is/should be lowercased. Choose [0, 1]")
@@ -31,7 +31,7 @@ def parse_settings():
                         help="Amount of negative samples per positive sample.")
     parser.add_argument('--window_size', type=int, default=5,
                         help="Size of context window around central word.")
-    parser.add_argument('--max_sentence_size', type=int, default=20,
+    parser.add_argument('--max_sentence_size', type=int, default=30,
                         help='Maximum sentence size (int).')
     parser.add_argument('--save_sequential', type=int, default=0,
                         help='Whether to save sequentially. Choose [0, 1].')

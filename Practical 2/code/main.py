@@ -18,7 +18,7 @@ from models.embedalign import EmbedAlign
 
 def construct_data_path(opt, name):
     return osp.join(opt.data_path, opt.dataset, opt.training_test + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
-                    + "_" + str(opt.window_size) + "_" + str(opt.k) + "_" + name + "." + opt.language)
+                    + "_" + str(opt.window_size) + "_" + str(opt.k) + "_" + name + opt.language)
 
 
 def construct_data_path_ea(opt, name):
