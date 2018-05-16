@@ -57,10 +57,10 @@ class EmbedAlign(nn.Module):
 
         return mus[:, position, :], sigmas[:, position, :]
 
-    def get_alignments(self, x_en, x_fr, en_mask, fr_mask):
+    def get_alignments(self, x_en, x_fr, en_len):
         """Using parts of the forward pass we can extract predicted alignments from the model."""
         # Encode the english sentence to Gaussian parameters
-        mus, sigmas = self._encoder(x_en)
+        mus, sigmas = self._encoder(x_en, en_len)
 
         # Decode the means into estimated word and alignment probabilities with CSS
         _, fr_probs = self._decoder(mus, x_en, x_fr)
