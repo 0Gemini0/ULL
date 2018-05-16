@@ -6,6 +6,7 @@ from collections import defaultdict
 import numpy as np
 import torch
 import msgpack
+import torch.nn.functional as f
 
 from settings import parse_settings
 from models.skipgram import SkipGram
@@ -16,7 +17,7 @@ from helpers import construct_data_path, construct_data_path_ea, construct_model
 
 def cosine_distance(target_candidates):
     # Normalise embeddings.
-    target_candidates = f.normalize(c, p=1, dim=1)
+    target_candidates = f.normalize(target_candidates, p=1, dim=1)
 
     # Get target and substitution candidates.
     target = target_candidates[0]
@@ -46,7 +47,7 @@ def kl_distance(tuple_means_sigmas):
     traces = torch.sum(torch.mm(1.0/candidates_sigmas, target_sigma.unsqueeze(1)), dim=1)
 
     # Compute inner products wrt sigmas
-    torch.sum((target_mean-candidates_means)*candidates_sigmas*(target_mean-candidates_means), dim=1)
+    inner_products_wrt_sigmas = torch.sum((target_mean-candidates_means)*candidates_sigmas*(target_mean-candidates_means), dim=1)
 
     # Compute final KLs
     KLs = 0.5*(logs - target_mean.shape[0] + traces + inner_products_wrt_sigmas)
@@ -178,10 +179,10 @@ def lst(opt):
         data_in = lst_preprocess(opt, device, opt.model)
 
         # Open index to word list
-        if model != "embedalign":
-            idx_to_word = msgpack.load(open(construct_data_path(opt, "IndexWordMap"), 'rb'), encoding='utf-8')
+        if opt.model != "embedalign":
+            idx_to_word = msgpack.load(open(construct_data_path(opt, "indexWordMap"), 'rb'), encoding='utf-8')
         else:
-            idx_to_word = msgpack.load(open(construct_data_path_ea(opt, "IndexWordMap.en"), 'rb'), encoding='utf-8')
+            idx_to_word = msgpack.load(open(construct_data_path_ea(opt, "indexWordMap.en"), 'rb'), encoding='utf-8')
 
         if opt.model == "skipgram":
             model = SkipGram(opt.v_dim_en, opt.d_dim, opt.v_dim_en-1).to(device)
