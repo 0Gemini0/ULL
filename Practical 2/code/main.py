@@ -15,11 +15,6 @@ from models.skipgram import SkipGram
 from models.bayesian import Bayesian
 from models.embedalign import EmbedAlign
 
-HANSARD_EN_MAX = 17370
-HANSARD_FR_MAX = 22830
-EUROPARL_EN_MAX = 61281
-EUROPARL_FR_MAX = 73445
-
 
 def construct_data_path(opt, name):
     return osp.join(opt.data_path, opt.dataset, opt.training_test + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
@@ -61,16 +56,18 @@ def load_checkpoint(opt, model, optimizers):
 def main(opt):
     # We activate the GPU if cuda is available, otherwise computation will be done on cpu
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # device = torch.device("cpu")
     print("Using device: {}".format(device))
 
+    # When the vocab size is 0, the entire vocab is used and its size loaded from disk.
     if opt.vocab_size == 0:
-        if opt.dataset == "hansards":
-            opt.v_dim_en = HANSARD_EN_MAX + 1
-            opt.v_dim_fr = HANSARD_FR_MAX + 1
-        elif opt.dataset == 'europarl':
-            opt.v_dim_en = EUROPARL_EN_MAX + 1
-            opt.v_dim_fr = EUROPARL_FR_MAX + 1
+        if opt.model == "embedalign":
+            opt.v_dim_en = msgpack.load(
+                open(osp.join(opt.data_path, opt.dataset, "pad_index_embedalign_{}.en".format(opt.max_sentence_size)), 'rb')) + 1
+            opt.v_dim_fr = msgpack.load(
+                open(osp.join(opt.data_path, opt.dataset, "pad_index_embedalign_{}.fr".format(opt.max_sentence_size)), 'rb')) + 1
+        else:
+            opt.v_dim_en = msgpack.load(open(osp.join(opt.data_path, opt.dataset, "pad_index_skipgram.en"), 'rb')) + 1
+            opt.v_dim_fr = msgpack.load(open(osp.join(opt.data_path, opt.dataset, "pad_index_skipgram.en"), 'rb')) + 1
 
     # Now we load the data fitting the selected model
     print("Loading Data...")
