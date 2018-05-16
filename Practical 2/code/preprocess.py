@@ -189,7 +189,7 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
     print("\rPadding negative samples...")
     negative_context[context == pad_index] = pad_index
     print("\rPutting negative samples to list...")
-    negative_samples = [([], [int(negative_context[i, j]) for j in context.shape[1]]) for i in range(context.shape[0])]
+    negative_samples = [([], [int(negative_context[i, j]) for j in range(context.shape[1]])) for i in range(context.shape[0])]
     print("Check: {} == {}?".format(len(negative_samples), len(centre_word_context_windows)))
     print("Check 2: {}, {}, diff?".format(negative_samples[0][1], negative_samples[1][1]))
     print("Check 3: {}, {}, same pad?".format(centre_word_context_windows[0][1], negative_samples[0][1]))
@@ -375,4 +375,4 @@ if __name__ == '__main__':
     preprocess_data_skipgram(path_to_data, opt.window_size, opt.vocab_size + 1, opt.k, opt.save_sequential)
 
     preprocess_data_embedalign(opt.data_path + "/" + opt.dataset + "/", opt.training_test, opt.lowercase,
-                                opt.max_sentence_size, opt.vocab_size)
+                               opt.max_sentence_size, opt.vocab_size)
