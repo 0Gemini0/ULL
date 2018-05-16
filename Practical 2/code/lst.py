@@ -47,7 +47,7 @@ def kl_distance(tuple_means_sigmas):
     traces = torch.sum(torch.mm(1.0/candidates_sigmas, target_sigma.unsqueeze(1)), dim=1)
 
     # Compute inner products wrt sigmas
-    torch.sum((target_mean-candidates_means)*candidates_sigmas*(target_mean-candidates_means), dim=1)
+    inner_products_wrt_sigmas = torch.sum((target_mean-candidates_means)*candidates_sigmas*(target_mean-candidates_means), dim=1)
 
     # Compute final KLs
     KLs = 0.5*(logs - target_mean.shape[0] + traces + inner_products_wrt_sigmas)
