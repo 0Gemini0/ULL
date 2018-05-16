@@ -13,10 +13,10 @@ Manual alignments are specified one link per line in the following format
 LINE EID FID TYPE PROB
 ```
 
-where 
+where
 
 * LINE is the line number (starting from 1) that addresses the sentence pair
-* EID is the 1-based position in the English sentence 
+* EID is the 1-based position in the English sentence
 * FID is the 1-based position in the French sentence
 * TYPE either S (sure) or P (probable)
 * PROB the probability of the alignment link
@@ -27,7 +27,7 @@ In this format, if something aligns to NULL, it simply does not appear in the fi
 
 # Test data
 
-Exactly the same format as dev. 
+Exactly the same format as dev.
 
 # AER script
 

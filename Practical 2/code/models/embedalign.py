@@ -39,7 +39,8 @@ class EmbedAlign(nn.Module):
         # Sum french probs, take log, mask, and sum some more, yielding the reconstruction loss per sentence. Also get the english log probs, masked.
         # Small values are added to the log to ensure stability
         en_log_probs = torch.log(en_probs + 1e-80) * en_mask.float()
-        fr_rec_loss = (torch.log(fr_probs.sum(dim=2) + 1e-80) * fr_mask.float()).sum(dim=1) / en_len.float()
+        fr_rec_loss = (torch.log((fr_probs * en_mask.unsqueeze(dim=1).float()).sum(dim=2) + 1e-80)
+                       * fr_mask.float()).sum(dim=1) / en_len.float()
 
         # Compute KL part of the loss, masked for padding
         kl = self._kl_divergence(mus, sigmas) * en_mask.float()
@@ -61,15 +62,16 @@ class EmbedAlign(nn.Module):
         # Encode the english sentence to Gaussian parameters
         mus, sigmas = self._encoder(x_en)
 
-        # Sample zs from the Gaussians with reparametrization
-        zs = self._sample(mus, sigmas)
+        # Decode the means into estimated word and alignment probabilities with CSS
+        _, fr_probs = self._decoder(mus, x_en, x_fr)
 
-        # Decode the samples into estimated word and alignment probabilities with CSS
-        _, fr_probs = self._decoder(zs, x_en, x_fr, en_mask, fr_mask)
+        # Mask the fr_probs accordingly, so pad cannot align
+        fr_probs = fr_probs * en_mask.unsqueeze(dim=1).float() * fr_mask.unsqueeze(dim=2).float()
 
-        # Transform fr_probs into alignments
+        # Transform fr_probs into alignments by taking the max
         _, alignments = torch.max(fr_probs, dim=2)
 
+        # [B x S_f]
         return alignments
 
     def _sample(self, mu, sigma):
