@@ -366,9 +366,9 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
 
 
 if __name__ == '__main__':
-    '''opt = parse_settings()
+    opt = parse_settings()
 
-    path_to_data = osp.join(opt.data_path, opt.dataset, opt.training_test + opt.language)
+    '''path_to_data = osp.join(opt.data_path, opt.dataset, opt.training_test + opt.language)
 
     path_to_data = basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
 
