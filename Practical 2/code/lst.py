@@ -74,7 +74,10 @@ def lst_preprocess(opt, device, model):
         candidate_dict[target] = candidates
 
     # Change the word_to_idx dict to a defaultdict so we can catch unks
-    word_to_idx = defaultdict(lambda: word_to_idx['UNK'], word_to_idx)
+    if opt.vocab_size == 0:
+        word_to_idx = defaultdict(lambda: opt.v_dim_en - 1, word_to_idx)
+    else:
+        word_to_idx = defaultdict(lambda: word_to_idx['UNK'], word_to_idx)
 
     # Construct target and candidate sentences
     sentence_iterator = []
@@ -110,7 +113,7 @@ def lst_preprocess(opt, device, model):
         center_iterator.append(torch.tensor(np.array(sentences)[:, position], device=device, dtype=torch.long))
 
         # Construct context tensor with padding, and mask
-        pad_index = opt.v_dim - 1
+        pad_index = opt.v_dim_en - 1
         prev_context = np.array(sentences)[:, position-opt.window_size:position]
         post_context = np.array(sentences)[:, position+1:position+1+opt.window_size]
         if prev_context.shape[1] < opt.window_size:
@@ -138,15 +141,6 @@ def lst(opt):
     for model_name in ["skipgram", "bayesian", "embedalign"]:
         opt.model = model_name
 
-        # Preprocess the lst files to get torch format data
-        data_in = lst_preprocess(opt, device, opt.model)
-
-        # Open index to word list
-        if model != "embedalign":
-            idx_to_word = msgpack.load(open(construct_data_path(opt, "IndexWordMap"), 'rb'), encoding='utf-8')
-        else:
-            idx_to_word = msgpack.load(open(construct_data_path_ea(opt, "IndexWordMap.en"), 'rb'), encoding='utf-8')
-
         # When the vocab size is 0, the entire vocab is used and its size loaded from disk.
         if opt.vocab_size == 0:
             if opt.model == "embedalign":
@@ -159,6 +153,15 @@ def lst(opt):
                     open(osp.join(opt.data_path, opt.dataset, "pad_index_skipgram.en"), 'rb')) + 1
                 opt.v_dim_fr = msgpack.load(
                     open(osp.join(opt.data_path, opt.dataset, "pad_index_skipgram.en"), 'rb')) + 1
+
+        # Preprocess the lst files to get torch format data
+        data_in = lst_preprocess(opt, device, opt.model)
+
+        # Open index to word list
+        if model != "embedalign":
+            idx_to_word = msgpack.load(open(construct_data_path(opt, "IndexWordMap"), 'rb'), encoding='utf-8')
+        else:
+            idx_to_word = msgpack.load(open(construct_data_path_ea(opt, "IndexWordMap.en"), 'rb'), encoding='utf-8')
 
         if opt.model == "skipgram":
             model = SkipGram(opt.v_dim_en, opt.d_dim, opt.v_dim_en-1).to(device)
@@ -207,6 +210,7 @@ def cosine_distance(target_candidates):
     sorted_values_indices = (sorted_values[0], sorted_values[1] + 1)
 
     return sorted_values_indices
+
 
 def kl_distance(tuple_means_sigmas):
     # Get target and substitution candidates.
