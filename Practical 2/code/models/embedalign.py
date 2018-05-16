@@ -161,9 +161,9 @@ class Decoder(nn.Module):
         positive_score = torch.exp(positive_score - u).sum(dim=2)
         negative_score = kappa * torch.exp(negative_score - u).sum(dim=2)
 
-        print(torch.max(batch_score))
-        print(torch.max(positive_score))
-        print(torch.max(negative_score))
+        print("Batch {}".format(torch.max(batch_score)))
+        print("Pos {}".format(torch.max(positive_score)))
+        print("Neg {}".format(torch.max(negative_score)))
 
         if language == "en":
             return batch_score / (positive_score + negative_score)
