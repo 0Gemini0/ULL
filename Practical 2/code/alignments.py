@@ -48,7 +48,7 @@ def aer(opt):
 
     # Construct and load  model
     model = EmbedAlign(opt.v_dim_en, opt.v_dim_fr, opt.d_dim, opt.h_dim,
-                       opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, device).to(device)
+                       opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, opt.kl_step, device).to(device)
 
     try:
         model = load_model(construct_model_path(opt, True), model)

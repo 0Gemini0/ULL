@@ -66,7 +66,7 @@ def write_lst(filename, data, scores, indices, model, idx_to_word):
 
         for score, index in zip(scores, indices):
             if model == 'embedalign':
-                candidate = idx_to_word[int(data[0][index, data[2].item()])]
+                candidate = idx_to_word(int(data[0][data[2], index].item()))
             else:
                 candidate = idx_to_word[int(data[0][index].item())]
             f.write("\t{} {}".format(candidate, score))
@@ -191,7 +191,7 @@ def lst(opt):
             model = Bayesian(opt.v_dim_en, opt.d_dim, opt.h_dim, opt.v_dim_en-1).to(device)
         elif opt.model == "embedalign":
             model = EmbedAlign(opt.v_dim_en, opt.v_dim_fr, opt.d_dim, opt.h_dim,
-                               opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, device).to(device)
+                               opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, opt.kl_step, device).to(device)
 
         # We give a warning when no model can be loaded
         try:
@@ -213,7 +213,7 @@ def lst(opt):
             write_lst(cosine_file, data, cos_scores, cos_indices, opt.model, idx_to_word)
             if opt.model != "skipgram":
                 kl_scores, kl_indices = kl_distance(embeddings)
-                write_lst(kl_file, data, kl_scores, kl_indices, opt.model, idx_to_word)
+                write_list(kl_file, data, kl_scores, kl_indices, opt.model, idx_to_word)
 
 
 if __name__ == "__main__":

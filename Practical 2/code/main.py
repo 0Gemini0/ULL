@@ -50,7 +50,7 @@ def main(opt):
         model = Bayesian(opt.v_dim_en, opt.d_dim, opt.h_dim, opt.v_dim_en-1)
     elif opt.model == "embedalign":
         model = EmbedAlign(opt.v_dim_en, opt.v_dim_fr, opt.d_dim, opt.h_dim,
-                           opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, device)
+                           opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, opt.kl_step, device)
     else:
         raise Exception("Model not recognized, choose [skipgram, bayesian, embedalign]")
 
@@ -62,8 +62,7 @@ def main(opt):
         model.to(device)
         sparse_params = model.sparse_params
 
-    # To work with ADAM and Sparse Embeddings, we need (retardedly) to manually store sparse parameters
-
+    # To work with ADAM and Sparse Embeddings, we need to manually store sparse parameters
     parameters_sparse = list(filter(lambda p: p.requires_grad, sparse_params))
     parameters = list(filter(lambda p: p.requires_grad, model.parameters()))
     parameters = [p for p in parameters if not any(p is p_ for p_ in parameters_sparse)]

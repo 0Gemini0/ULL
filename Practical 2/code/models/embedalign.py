@@ -13,8 +13,12 @@ class EmbedAlign(nn.Module):
     The EmbedAlign model in PyTorch.
     """
 
-    def __init__(self, v_dim_en, v_dim_fr, d_dim, h_dim, neg_dim, pad_index_en, pad_index_fr, device):
+    def __init__(self, v_dim_en, v_dim_fr, d_dim, h_dim, neg_dim, pad_index_en, pad_index_fr, kl_step, device):
         super().__init__()
+
+        # KL annealing
+        self.kl_scale = -kl_step
+        self.kl_step = kl_step
 
         self._encoder = Encoder(v_dim_en, h_dim, d_dim, pad_index_en)
         self._decoder = Decoder(v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index_en, pad_index_fr, device)
@@ -45,8 +49,12 @@ class EmbedAlign(nn.Module):
         # Compute KL part of the loss, masked for padding
         kl = self._kl_divergence(mus, sigmas) * en_mask.float()
 
+        # Update kl_scale
+        if self.kl_scale < 1.0:
+            self.kl_scale += self.kl_step
+
         # Return final ELBO, averaged over the minibatch
-        return -(fr_rec_loss + (en_log_probs - kl * en_mask.float()).sum(dim=1)).sum() / x_en.shape[0]
+        return -(fr_rec_loss + (en_log_probs - kl * self.kl_scale * en_mask.float()).sum(dim=1)).sum() / x_en.shape[0]
 
     def lst_pass(self, data_in):
         x = data_in[0]

@@ -59,6 +59,8 @@ def parse_settings():
                         help='Number of epochs over the data.')
     parser.add_argument('--batch_size', type=int, default=1024,
                         help="Number of datapoints per minibatch.")
+    parser.add_argument('--kl_step', type=int, default=1e-3,
+                        help="Kl annealing step.")
 
     # Evaluation
     parser.add_argument('--aer_mode', type=str, default='test',
