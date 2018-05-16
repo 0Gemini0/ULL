@@ -159,7 +159,7 @@ class Decoder(nn.Module):
         # Compute stable exponentials
         batch_score = torch.exp(batch_score - u)
         positive_score = torch.exp(positive_score - u).sum(dim=2)
-        negative score = kappa * torch.exp(negative_score - u).sum(dim=2)
+        negative_score = kappa * torch.exp(negative_score - u).sum(dim=2)
 
         if language == "en":
             return batch_score / (positive_score + negative_score)
