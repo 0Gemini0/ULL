@@ -37,7 +37,7 @@ def parse_settings():
                         help='Whether to save sequentially. Choose [0, 1].')
 
     # Model architecture
-    parser.add_argument('--model', type=str, default='embedalign',
+    parser.add_argument('--model', type=str, default='skipgram',
                         help='Which model to use. Choose [skipgram, bayesian, embedalign].')
     parser.add_argument('--v_dim_en', type=int, default=10002,
                         help='Dimensionality of input layer V.')

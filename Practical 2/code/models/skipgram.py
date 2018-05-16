@@ -47,7 +47,7 @@ class SkipGram(nn.Module):
 
     def lst_pass(self, data_in):
         """Return embeddings in a format suited for lst processing."""
-        center = self.center_embedding(self.data_in[0])
+        center = self.center_embedding(data_in[0])
 
         # None is the 'sigma' of these embeddings
         return center, None
