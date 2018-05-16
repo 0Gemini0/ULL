@@ -114,6 +114,7 @@ def main(opt):
     for i in range(opt.num_epochs):
         ep_loss = 0.
         t = 0.
+        is_best = False
         for j, data_in in enumerate(data):
             start = time()
             # No longer tedious! Send data to selected device
@@ -147,7 +148,6 @@ def main(opt):
         # Save_checkpoint
         save_checkpoint(opt, model, optimizers, i, losses, is_best)
         print("Epoch: {}, Average Loss: {}".format(i, avg_loss))
-        is_best = False
 
 
 if __name__ == '__main__':
