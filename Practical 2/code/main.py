@@ -92,12 +92,15 @@ def main(opt):
 
     if opt.parallel and torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
+        sparse_params = model.module.sparse_params
         print("Using parallel processing on GPUs")
     else:
         model.to(device)
+        sparse_params = model.sparse_params
 
     # To work with ADAM and Sparse Embeddings, we need (retardedly) to manually store sparse parameters
-    parameters_sparse = list(filter(lambda p: p.requires_grad, model.sparse_params))
+
+    parameters_sparse = list(filter(lambda p: p.requires_grad, sparse_params))
     parameters = list(filter(lambda p: p.requires_grad, model.parameters()))
     parameters = [p for p in parameters if not any(p is p_ for p_ in parameters_sparse)]
     optimizers = []
