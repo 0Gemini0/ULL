@@ -65,9 +65,7 @@ def write_lst(filename, data, scores, indices, model, idx_to_word):
 
         for score, index in zip(scores, indices):
             if model == 'embedalign':
-                print(data[0], data[0].type, data[0].shape, data[2], data[2].type, data[2].shape, index)
-                print("HELLO ", data[0][index, data[2].item()])
-                candidate = idx_to_word(int(data[0][index, data[2].item()].item()))
+                candidate = idx_to_word[int(data[0][index, data[2].item()])]
             else:
                 candidate = idx_to_word[int(data[0][index].item())]
             f.write("\t{} {}".format(candidate, score))
