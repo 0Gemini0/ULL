@@ -16,6 +16,7 @@ from time import time
 import os.path as osp
 import msgpack
 from settings import parse_settings
+from random import shuffle
 
 # Patch msgpack to work with numpy
 import msgpack_numpy as m
@@ -139,6 +140,10 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
     for word in unigram_statistics:
         ordered_unigram_statistics[word_index_map[word]] = unigram_statistics[word]
 
+    '''Raise unigram stats to the power of 3/4 for a more spread out negative context sampling.'''
+    ordered_unigram_statistics = np.array(ordered_unigram_statistics) ** 0.75 / \
+        np.sum(np.array(ordered_unigram_statistics) ** 0.75)
+
     '''Correct Pad Index'''
     if pad_index == 1:
         pad_index = len(list(counter.keys()))
@@ -146,11 +151,11 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
     '''Extra function for helping compute negative samples.'''
     def get_samples_from_multinomial(counts):
         samples = [int(index) for index in np.flatnonzero(counts) for _ in range(counts[index])]
+        shuffle(samples)
         return samples
 
     """Compute context (past and future) and negative samples for each token in the dataset."""
     centre_word_context_windows = []
-    # negative_samples = []
     a = len(data_lines)
     for m, line in enumerate(data_lines):
         for i, word in enumerate(line):
@@ -162,23 +167,16 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
             for j in range(i + 1, min(i + 1 + window_size, len(line))):  # Compute future context
                 future_context.append(word_index_map[line[j]])
 
-            '''Compute negative samples.'''
-            # length_context = len(past_context) + len(future_context)
-            # samples = get_samples_from_multinomial(multinomial(k * length_context, ordered_unigram_statistics))
-
             '''Pad context windows to full size.'''
             if len(past_context) < window_size:
                 pad = [pad_index] * (window_size - len(past_context))
                 past_context = pad + past_context
-                # samples = pad + samples
             if len(future_context) < window_size:
                 pad = [pad_index] * (window_size - len(future_context))
                 future_context.extend(pad)
-                # samples.extend(pad)
 
             '''Store.'''
             centre_word_context_windows.append((word_index_map[word], [past_context, future_context]))
-            # negative_samples.append((word_index_map[word], samples))
 
         print('\rPercentage done: {:2f}'.format(100*(m+1)/a), end='', flush=True)
 
