@@ -154,12 +154,12 @@ class Decoder(nn.Module):
         positive_score = torch.matmul(z, positive_embeddings.transpose(1, 0))
         negative_score = torch.matmul(z, negative_embeddings.transpose(1, 0))
 
-        u = torch.max(torch.max(positive_score), torch.max(negative_score))
+        u = torch.max(torch.max(positive_score, dim=2), torch.max(negative_score, dim=2))
 
         # Compute stable exponentials
         batch_score = torch.exp(batch_score - u)
-        positive_score = torch.exp(positive_score - u).sum(dim=2)
-        negative_score = kappa * torch.exp(negative_score - u).sum(dim=2)
+        positive_score = torch.exp(positive_score - u.unsqueeze(2)).sum(dim=2)
+        negative_score = kappa * torch.exp(negative_score - u.unsqueeze(2)).sum(dim=2)
 
         print("Batch {}".format(torch.max(batch_score)))
         print("Pos {}".format(torch.max(positive_score)))
