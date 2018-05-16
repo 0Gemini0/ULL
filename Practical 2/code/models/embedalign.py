@@ -36,9 +36,10 @@ class EmbedAlign(nn.Module):
         # Decode the samples into estimated word and alignment probabilities with CSS
         en_probs, fr_probs = self._decoder(zs, x_en, x_fr)
 
-        # Sum french probs, take log, mask, and sum some more, yielding the reconstruction loss per sentence. Also get the english log probs, masked
-        en_log_probs = torch.log(en_probs) * en_mask.float()
-        fr_rec_loss = (torch.log(fr_probs.sum(dim=2)) * fr_mask.float()).sum(dim=1) / en_len.float()
+        # Sum french probs, take log, mask, and sum some more, yielding the reconstruction loss per sentence. Also get the english log probs, masked.
+        # Small values are added to the log to ensure stability
+        en_log_probs = torch.log(en_probs + 1e-80) * en_mask.float()
+        fr_rec_loss = (torch.log(fr_probs.sum(dim=2) + 1e-80) * fr_mask.float()).sum(dim=1) / en_len.float()
 
         # Compute KL part of the loss, masked for padding
         kl = self._kl_divergence(mus, sigmas) * en_mask.float()
@@ -145,13 +146,20 @@ class Decoder(nn.Module):
         positive_embeddings = embedding(positive_set)
         negative_embeddings = embedding(negative_set)
 
-        # TODO: stable exponentials
+        # Compute scores before exponentials
         if language == "en":
-            batch_score = torch.exp((z * batch_embeddings).sum(dim=2))
+            batch_score = (z * batch_embeddings).sum(dim=2)
         else:
-            batch_score = torch.exp(torch.bmm(batch_embeddings, z.transpose(1, 2)))
-        positive_score = torch.exp(torch.matmul(z, positive_embeddings.transpose(1, 0))).sum(dim=2)
-        negative_score = kappa * torch.exp(torch.matmul(z, negative_embeddings.transpose(1, 0))).sum(dim=2)
+            batch_score = torch.bmm(batch_embeddings, z.transpose(1, 2))
+        positive_score = torch.matmul(z, positive_embeddings.transpose(1, 0))
+        negative_score = torch.matmul(z, negative_embeddings.transpose(1, 0))
+
+        u = torch.max(torch.max(positive_score), torch.max(negative_score))
+
+        # Compute stable exponentials
+        batch_score = torch.exp(batch_score - u)
+        positive_score = torch.exp(positive_score - u).sum(dim=2)
+        negative score = kappa * torch.exp(negative_score - u).sum(dim=2)
 
         if language == "en":
             return batch_score / (positive_score + negative_score)
