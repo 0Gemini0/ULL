@@ -15,7 +15,7 @@ from settings import parse_settings
 
 def construct_data_path(opt, name):
     return osp.join(opt.data_path, opt.dataset, "training_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
-                    + "_" + str(opt.window_size) + "_" + str(opt.k) + "_" + name + "." + opt.language)
+                    + "_" + str(opt.window_size) + "_" + str(opt.k) + "_" + name + opt.language)
 
 
 def construct_data_path_ea(opt, name):
@@ -203,12 +203,12 @@ def cosine_distance(target_candidates):
     inner_prod = candidates.mm(target.unsqueeze(1))
 
     # Sort results on similarity and get the correct indices
-    sorted_values = torch.sort(inner_prod.squeeze(), descending=True))
+    sorted_values = torch.sort(inner_prod.squeeze(), descending=True)
     sorted_values_indices = (sorted_values[0], sorted_values[1] + 1)
 
     return sorted_values_indices
 
-def KL_distance(tuple_means_sigmas):
+def kl_distance(tuple_means_sigmas):
     # Get target and substitution candidates.
     target_mean = tuple_means_sigmas[0][0]
     candidates_means = tuple_means_sigmas[0][1:]
@@ -228,7 +228,7 @@ def KL_distance(tuple_means_sigmas):
     KLs = 0.5*(logs - target_mean.shape[0] + traces + inner_products_wrt_sigmas)
 
     # Sort results on KL divergences and get the correct indices
-    sorted_values = torch.sort(KLs.squeeze(), descending=True))
+    sorted_values = torch.sort(KLs.squeeze(), descending=True)
     sorted_values_indices = (sorted_values[0], sorted_values[1] + 1)
 
     return sorted_values_indices
