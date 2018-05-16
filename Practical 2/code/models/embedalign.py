@@ -157,6 +157,7 @@ class Decoder(nn.Module):
         u = torch.max(torch.max(positive_score, dim=2)[0], torch.max(negative_score, dim=2)[0])
 
         print(u.shape)
+        print(batch_score.shape)
 
         # Compute stable exponentials
         batch_score = torch.exp(batch_score - u)
