@@ -66,7 +66,7 @@ def write_lst(filename, data, scores, indices, model, idx_to_word):
 
         for score, index in zip(scores, indices):
             if model == 'embedalign':
-                candidate = idx_to_word(int(data[0][data[2], index].item()))
+                candidate = idx_to_word[int(data[0][index, data[2].item()])]
             else:
                 candidate = idx_to_word[int(data[0][index].item())]
             f.write("\t{} {}".format(candidate, score))
@@ -213,7 +213,7 @@ def lst(opt):
             write_lst(cosine_file, data, cos_scores, cos_indices, opt.model, idx_to_word)
             if opt.model != "skipgram":
                 kl_scores, kl_indices = kl_distance(embeddings)
-                write_list(kl_file, data, kl_scores, kl_indices, opt.model, idx_to_word)
+                write_lst(kl_file, data, kl_scores, kl_indices, opt.model, idx_to_word)
 
 
 if __name__ == "__main__":
