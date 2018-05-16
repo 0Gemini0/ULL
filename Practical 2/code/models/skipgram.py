@@ -44,3 +44,10 @@ class SkipGram(nn.Module):
 
         # Directly return the loss, i.e. the negative normalized sum of the positive and negative 'score'
         return -(pos_scores + neg_scores).sum() / pos_scores.shape[0]
+
+    def lst_pass(self, data_in):
+        """Return embeddings in a format suited for lst processing."""
+        center = self.center_embedding(self.data_in[0])
+
+        # None is the 'sigma' of these embeddings
+        return center, None

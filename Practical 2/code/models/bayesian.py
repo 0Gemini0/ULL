@@ -66,6 +66,19 @@ class Bayesian(nn.Module):
 
         return loss
 
+    def lst_pass(self, data_in):
+        """Return embeddings in a format suited for lst processing."""
+        center = data_in[0]
+        context = data_in[1]
+        mask = data_in[2]
+
+        mu, sigma = self.posterior(center, context, mask)
+
+        # Expand sigma to [B x D] for compatability with embedalign
+        sigma = sigma.repeat(1, mu.shape[1])
+
+        return mu, sigma
+
     def _kl_divergence(self, mu_1, sigma_1, mu_2, sigma_2):
         """
         Batch wise computation of KL divergence between spherical Gaussians.

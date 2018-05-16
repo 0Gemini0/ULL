@@ -18,6 +18,10 @@ def construct_data_path(opt, name):
                     + "_" + str(opt.window_size) + "_" + str(opt.k) + "_" + name + "." + opt.language)
 
 
+def construct_data_path_ea(opt, name):
+    return osp.join(opt.data_path, opt.dataset, opt.training_test + "_" + str(bool(opt.lowercase)) + "_" + str(opt.max_sentence_size) + "_" + str(opt.vocab_size) + "_" + name)
+
+
 def construct_model_path(opt, is_best):
     if is_best:
         return osp.join(opt.out_path, opt.dataset, opt.model + "_" + str(opt.vocab_size) + "_" + str(bool(opt.lowercase))
@@ -33,14 +37,31 @@ def load_model(path, model):
     return model
 
 
-def lst_preprocess(opt, device):
+def write_lst(filename, data, scores, indices, model, idx_to_word):
+    with open(filename, 'a') as f:
+        f.write("RANKED\t{} {}".format(data[3], data[4]))
+
+        for score, index in zip(scores, indices):
+            if model == 'embedalign':
+                candidate = idx_to_word(int(data[0][data[2], index].item()))
+            else:
+                candidate = idx_to_word[int(data[0][index].item())]
+            f.write("\t{} {}".format(candidate, score))
+
+        f.write("\n")
+
+
+def lst_preprocess(opt, device, model):
 
     # Read lst data
     with open(osp.join(opt.lst_path, 'lst_test.preprocessed'), 'r') as f:
         lst_data = [sentence.split('\t') for sentence in f.read().splitlines()]
 
     # Open word to index dictionary
-    word_to_idx = msgpack.load(open(construct_data_path(opt, "wordIndexMap"), 'rb'), encoding='utf-8')
+    if model != "embedalign":
+        word_to_idx = msgpack.load(open(construct_data_path(opt, "wordIndexMap"), 'rb'), encoding='utf-8')
+    else:
+        word_to_idx = msgpack.load(open(construct_data_path_ea(opt, "wordIndexMap.en"), 'rb'), encoding='utf-8')
 
     with open(osp.join(opt.lst_path, 'lst.gold.candidates'), 'r') as f:
         target_candidates = f.read().splitlines()
@@ -58,14 +79,23 @@ def lst_preprocess(opt, device):
     # Construct target and candidate sentences
     sentence_iterator = []
     len_iterator = []
+    position_iterator = []
     context_iterator = []
     context_mask_iterator = []
     center_iterator = []
+    target_iterator = []
+    id_iterator = []
     for data in lst_data:
         # Unpack the lst data
         target = data[0]
+        id = data[1]
         position = int(data[2])
         target_sentence = [word_to_idx[word] for word in data[3].split(" ")]
+
+        # Add some usefull data to the iterators
+        position_iterator.append(torch.tensor(position, device=device, dtype=torch.long))
+        target_iterator.append(target)
+        id_iterator.append(id)
 
         # Construct candidate sentences with each target sentence
         target_prev = target_sentence[:position]
@@ -93,28 +123,72 @@ def lst_preprocess(opt, device):
         context_iterator.append(torch.tensor(context, device=device, dtype=torch.long))
         context_mask_iterator.append(torch.tensor(1 - (context == pad_index), device=device, dtype=torch.long))
 
-    return sentence_iterator, len_iterator, center_iterator, context_iterator, context_mask_iterator
+    # Return data for the correct model
+    if model == "embedalign":
+        return sentence_iterator, len_iterator, position_iterator, target_iterator, id_iterator
+    else:
+        return center_iterator, context_iterator, context_mask_iterator, target_iterator, id_iterator
 
 
 def lst(opt):
     # GPU or CPU selection
     device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
 
-    data_in = lst_preprocess(opt, device)
+    ########################## SKIPGRAM AND BAYESIAN ################################
+    for model_name in ["skipgram", "bayesian", "embedalign"]:
+        opt.model = model_name
 
-    for model in ["skipgram", "bayesian"]:
-        opt.model = model
+        # Preprocess the lst files to get torch format data
+        data_in = lst_preprocess(opt, device, opt.model)
+
+        # Open index to word list
+        if model != "embedalign":
+            idx_to_word = msgpack.load(open(construct_data_path(opt, "IndexWordMap"), 'rb'), encoding='utf-8')
+        else:
+            idx_to_word = msgpack.load(open(construct_data_path_ea(opt, "IndexWordMap.en"), 'rb'), encoding='utf-8')
+
+        # When the vocab size is 0, the entire vocab is used and its size loaded from disk.
+        if opt.vocab_size == 0:
+            if opt.model == "embedalign":
+                opt.v_dim_en = msgpack.load(
+                    open(osp.join(opt.data_path, opt.dataset, "pad_index_embedalign_{}.en".format(opt.max_sentence_size)), 'rb')) + 1
+                opt.v_dim_fr = msgpack.load(
+                    open(osp.join(opt.data_path, opt.dataset, "pad_index_embedalign_{}.fr".format(opt.max_sentence_size)), 'rb')) + 1
+            else:
+                opt.v_dim_en = msgpack.load(
+                    open(osp.join(opt.data_path, opt.dataset, "pad_index_skipgram.en"), 'rb')) + 1
+                opt.v_dim_fr = msgpack.load(
+                    open(osp.join(opt.data_path, opt.dataset, "pad_index_skipgram.en"), 'rb')) + 1
+
         if opt.model == "skipgram":
             model = SkipGram(opt.v_dim_en, opt.d_dim, opt.v_dim_en-1).to(device)
         elif opt.model == "bayesian":
             model = Bayesian(opt.v_dim_en, opt.d_dim, opt.h_dim, opt.v_dim_en-1).to(device)
+        elif opt.model == "embedalign":
+            model = EmbedAlign(opt.v_dim_en, opt.v_dim_fr, opt.d_dim, opt.h_dim,
+                               opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, device).to(device)
 
-        model = load_model(construct_model_path(opt, True), model)
+        # We give a warning when no model can be loaded
+        try:
+            model = load_model(construct_model_path(opt, True), model)
+        except:
+            print("No model of type {}, calculating scores with untrained model.".format(opt.model))
 
-        with open()
-        for data in zip(data_in[2], data_in[3], data_in[4]):
+        # Storage paths
+        cosine_file = osp.join(opt.out_path, opt.dataset, "{}_cos_lst.predictions".format(opt.model))
+        kl_file = osp.join(opt.out_path, opt.dataset, "{}_kl_lst.predictions".format(opt.model))
+
+        # Get the scores from the model and write to file
+        for data in zip(data_in[0], data_in[1], data_in[2], data_in[3], data_in[4]):
+            # Special forward pass to get mus and sigmas (embeddings)
             embeddings = model.lst_pass(data)
-            scores = distance(embeddings)
+
+            # We score the embeddings using both cosine distance and KL whenever possible
+            cos_scores, cos_indices = cosine_distance(embeddings[0])
+            write_lst(cosine_file, data, cos_scores, cos_indices, opt.model, idx_to_word)
+            if opt.model != "skipgram":
+                kl_scores, kl_indices = kl_distance(embeddings)
+                write_list(kl_file, data, kl_scores, kl_indices, opt.model, idx_to_word)
 
 
 if __name__ == "__main__":

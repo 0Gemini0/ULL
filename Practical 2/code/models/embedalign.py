@@ -47,6 +47,15 @@ class EmbedAlign(nn.Module):
         # Return final ELBO, averaged over the minibatch
         return -(fr_rec_loss + (en_log_probs - kl * en_mask.float()).sum(dim=1)).sum() / x_en.shape[0]
 
+    def lst_pass(self, data_in):
+        x = data_in[0]
+        len = data_in[1]
+        position = data_in[2]
+
+        mus, sigmas = self._encoder(x, len)
+
+        return mus[:, position, :], sigmas[:, position, :]
+
     def get_alignments(self, x_en, x_fr, en_mask, fr_mask):
         """Using parts of the forward pass we can extract predicted alignments from the model."""
         # Encode the english sentence to Gaussian parameters
@@ -90,17 +99,21 @@ class Encoder(nn.Module):
         self._sig_proj = torch.nn.Linear(d_dim, d_dim)
 
     def forward(self, x, x_len):
+        # Pack encodings
         x_emb = self._det_emb(x)
         x_packed = pack_padded_sequence(x_emb, x_len, batch_first=True)
         # [B * S x D]
 
+        # Get GRU hidden states and unpack them
         h_packed, _ = self._gru(x_packed)
         h, _ = pad_packed_sequence(h_packed, batch_first=True, total_length=x.shape[1])
         # [B x S x 2H]
 
+        # Sum both directions
         h_sum = h[:, :, :int(h.shape[2]/2)] + h[:, :, int(h.shape[2]/2):]
         # [B x S x H]
 
+        # Estimate posterior parameters
         mus = self._mu_proj(h_sum)
         sigmas = F.softplus(self._sig_proj(h_sum))
         # [B x S x D]
@@ -125,7 +138,7 @@ class Decoder(nn.Module):
         self.sparse_params = [p for p in self.parameters()]
 
     def forward(self, zs, x_en, x_fr):
-        # Use complementary sum sampling to approximate the probabilities of the french and english sentences given z
+        """Use complementary sum sampling to approximate the probabilities of the french and english sentences given z."""
         en_probs = self._css(x_en, self.v_dim_en, self.neg_dim, self.en_embedding, zs, "en")
         fr_probs = self._css(x_fr, self.v_dim_fr, self.neg_dim, self.fr_embedding, zs, "fr")
 
