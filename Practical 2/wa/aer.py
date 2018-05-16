@@ -6,6 +6,7 @@ For test results, please use the official AER perl script.
 """
 import sys
 
+
 def read_naacl_alignments(path):
     """
     Read NAACL-formatted alignment files.
@@ -64,7 +65,7 @@ class AERSufficientStatistics:
         """
         Update AER sufficient statistics for a set of predicted links given goldstandard information.
 
-        :param sure: set of sure links 
+        :param sure: set of sure links
             a links is a tuple of 1-based positions (from, to) where 0 is reserved for NULL
         :param probable: set of probable links (must incude sure links)
         :param predicted: set of predicted links
@@ -78,6 +79,7 @@ class AERSufficientStatistics:
         """Return alignment error rate: 1 - (|A & S| + |A & P|)/(|A| + |S|)"""
         return 1 - (self.a_and_s + self.a_and_p) / (self.a + self.s)
 
+
 def test(gold_path, pred_path):
     from random import random
     # 1. Read in gold alignments
@@ -86,9 +88,9 @@ def test(gold_path, pred_path):
 
     # 2. Compute AER
 
-    # first we get an object that manages sufficient statistics 
+    # first we get an object that manages sufficient statistics
     metric = AERSufficientStatistics()
-    # then we iterate over the corpus 
+    # then we iterate over the corpus
     for gold, pred in zip(gold_sets, pred_sets):
         metric.update(sure=gold[0], probable=gold[1], predicted=pred[0] | pred[1])
     # AER
@@ -100,7 +102,7 @@ def random_test(path):
     # 1. Read in gold alignments
     gold_sets = read_naacl_alignments(path)
 
-    # 2. Here you would have the predictions of your own algorithm, 
+    # 2. Here you would have the predictions of your own algorithm,
     #  for the sake of the illustration, I will cheat and make some predictions by corrupting 50% of sure gold alignments
     predictions = []
     for s, p in gold_sets:
@@ -112,9 +114,9 @@ def random_test(path):
 
     # 3. Compute AER
 
-    # first we get an object that manages sufficient statistics 
+    # first we get an object that manages sufficient statistics
     metric = AERSufficientStatistics()
-    # then we iterate over the corpus 
+    # then we iterate over the corpus
     for gold, pred in zip(gold_sets, predictions):
         metric.update(sure=gold[0], probable=gold[1], predicted=pred)
     # AER
@@ -124,8 +126,7 @@ def random_test(path):
 if __name__ == '__main__':
     if len(sys.argv) == 3:
         test(sys.argv[1], sys.argv[2])
-    elif len(sys.argv) == 2:  # here we get a GOLD file, corrupt 50% of the alignments, and compute AER     
+    elif len(sys.argv) == 2:  # here we get a GOLD file, corrupt 50% of the alignments, and compute AER
         random_test(sys.argv[1])
     else:
         print('Usage: %s gold test' % sys.argv[0])
-

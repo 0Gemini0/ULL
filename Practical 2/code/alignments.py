@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 
 import torch
+import msgpack
+import os.path as osp
+from collections import defaultdict
 
 from settings import parse_settings
 from helpers import construct_data_path_ea, load_model, construct_model_path
+from models.embedalign import EmbedAlign
 
 
 def aer(opt):
     # GPU or CPU selection
     device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
-    opt.model = "embedaling"
+    opt.model = "embedalign"
 
     # correct v_dim if vocab_size is 0
     if opt.vocab_size == 0:
@@ -38,28 +42,32 @@ def aer(opt):
     french_iterator = []
     for e_sen, f_sen in zip(english, french):
         english_iterator.append(torch.tensor([word_to_idx[word]
-                                              for word in e_sen.split(' ')], device=device, dtype=torch.long))
+                                              for word in e_sen.split()], device=device, dtype=torch.long))
         french_iterator.append(torch.tensor([word_to_idx[word]
-                                             for word in f_sen.split(' ')], device=device, dtype=torch.long))
+                                             for word in f_sen.split()], device=device, dtype=torch.long))
 
     # Construct and load  model
-     model = EmbedAlign(opt.v_dim_en, opt.v_dim_fr, opt.d_dim, opt.h_dim,
-                               opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, device).to(device)
-     try:
-         model = load_model(construct_model_path(opt, True), model)
-     except:
-         print("No model of type {}, calculating scores with untrained model.".format(opt.model))
+    model = EmbedAlign(opt.v_dim_en, opt.v_dim_fr, opt.d_dim, opt.h_dim,
+                       opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, device).to(device)
 
-     # Forward pass and compute aer
-     alignments_file = open(osp.join(opt.out_path, opt.dataset, "{}_alignments".format(opt.aer_mode)), 'w')
-     for i, x_en, x_fr in enumerate(zip(english_iterator, french_iterator)):
-         alignments = model.get_alignments(x_en, x_fr, x_en.shape[0])
+    try:
+        model = load_model(construct_model_path(opt, True), model)
+    except:
+        print("No model of type {}, calculating scores with untrained model.".format(opt.model))
 
-         # Write alignments to file
-         for j in range(aligments.shape[1]):
-             alignments_file.write('{} {} {}\n'.format(i, alignments[:, j].item(), j))
+    # Forward pass and compute aer
+    alignments_file = open(osp.join(opt.out_path, opt.dataset, "{}.alignments".format(opt.aer_mode)), 'w')
+    for i, (x_en, x_fr) in enumerate(zip(english_iterator, french_iterator)):
+        alignments = model.get_alignments(x_en.unsqueeze(0), x_fr.unsqueeze(
+            0), torch.tensor([x_en.shape[0]], device=device, dtype=torch.long))
 
-     alignments_file.close()
+        # Write alignments to file
+        for j in range(alignments.shape[1]):
+            alignments_file.write('{} {} {}\n'.format(i+1, alignments[:, j].item()+1, j+1))
+
+        print("\rPercentage done with alignments: {}".format(float(i) / len(english_iterator) * 100), end="", flush=True)
+
+    alignments_file.close()
 
 
 if __name__ == '__main__':

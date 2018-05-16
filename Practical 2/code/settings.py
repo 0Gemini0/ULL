@@ -13,8 +13,9 @@ def parse_settings():
                         help="Output folder.")
     parser.add_argument('--data_path', type=str, default='../data/original',
                         help="Path to folder containing datasets.")
-    parser.add_argument('--lst_path', type=str, default='../lst/',
+    parser.add_argument('--lst_path', type=str, default='../lst',
                         help="Lst path.")
+    parser.add_argument('--aer_path', type=str, default='../wa')
     parser.add_argument('--dataset', type=str, default='hansards',
                         help='Which dataset to load, choose [hansards, europarl]')
     parser.add_argument('--training_test', type=str, default='training',
@@ -58,5 +59,9 @@ def parse_settings():
                         help='Number of epochs over the data.')
     parser.add_argument('--batch_size', type=int, default=1024,
                         help="Number of datapoints per minibatch.")
+
+    # Evaluation
+    parser.add_argument('--aer_mode', type=str, default='test',
+                        help="Alignment error rate prediction mode, choose [dev, test]")
 
     return parser.parse_args()

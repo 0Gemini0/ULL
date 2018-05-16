@@ -65,9 +65,6 @@ class EmbedAlign(nn.Module):
         # Decode the means into estimated word and alignment probabilities with CSS
         _, fr_probs = self._decoder(mus, x_en, x_fr)
 
-        # Mask the fr_probs accordingly, so pad cannot align
-        fr_probs = fr_probs * en_mask.unsqueeze(dim=1).float() * fr_mask.unsqueeze(dim=2).float()
-
         # Transform fr_probs into alignments by taking the max
         _, alignments = torch.max(fr_probs, dim=2)
 
