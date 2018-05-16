@@ -48,10 +48,10 @@ def parse_settings():
                         help='Dimensionality of embedding layer D.')
     parser.add_argument('--h_dim', type=int, default=128,
                         help='Dimensionality of hidden layers H.')
-    parser.add_argument('--neg_dim', type=int, default=1000)
+    parser.add_argument('--neg_dim', type=int, default=2500)
 
     # Training
-    parser.add_argument('--parallel', type=int, default=1,
+    parser.add_argument('--parallel', type=int, default=0,
                         help='Whether to use parallel processing if available.')
     parser.add_argument('--lr', type=float, default=1e-2,
                         help='Learning rate.')
