@@ -213,7 +213,7 @@ def lst(opt):
             write_lst(cosine_file, data, cos_scores, cos_indices, opt.model, idx_to_word)
             if opt.model != "skipgram":
                 kl_scores, kl_indices = kl_distance(embeddings)
-                write_list(kl_file, data, kl_scores, kl_indices, opt.model, idx_to_word)
+                write_lst(kl_file, data, kl_scores, kl_indices, opt.model, idx_to_word)
 
 
 if __name__ == "__main__":
