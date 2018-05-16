@@ -146,7 +146,7 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
 
     """Compute context (past and future) and negative samples for each token in the dataset."""
     centre_word_context_windows = []
-    negative_samples = []
+    # negative_samples = []
     a = len(data_lines)
     for m, line in enumerate(data_lines):
         for i, word in enumerate(line):
@@ -159,24 +159,37 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
                 future_context.append(word_index_map[line[j]])
 
             '''Compute negative samples.'''
-            length_context = len(past_context) + len(future_context)
-            samples = get_samples_from_multinomial(multinomial(k * length_context, ordered_unigram_statistics))
+            # length_context = len(past_context) + len(future_context)
+            # samples = get_samples_from_multinomial(multinomial(k * length_context, ordered_unigram_statistics))
 
             '''Pad context windows to full size.'''
             if len(past_context) < window_size:
                 pad = [pad_index] * (window_size - len(past_context))
                 past_context = pad + past_context
-                samples = pad + samples
+                # samples = pad + samples
             if len(future_context) < window_size:
                 pad = [pad_index] * (window_size - len(future_context))
                 future_context.extend(pad)
-                samples.extend(pad)
+                # samples.extend(pad)
 
             '''Store.'''
             centre_word_context_windows.append((word_index_map[word], [past_context, future_context]))
-            negative_samples.append((word_index_map[word], samples))
+            # negative_samples.append((word_index_map[word], samples))
 
         print('\rPercentage done: {:2f}'.format(100*(m+1)/a), end='', flush=True)
+
+    # Generate negative samples
+    context = np.array([context[1][0] + context[1][1] for context in centre_word_context_windows])
+    print("\rGetting negative samples...")
+    negative_context = np.array(get_samples_from_multinomial(multinomial(
+        k * context.shape[0] * context.shape[1], ordered_unigram_statistics))).reshape(context.shape)
+    print("\rPadding negative samples...")
+    negative_context[context == pad_index] = pad_index
+    print("\rPutting negative samples to list...")
+    negative_samples = [([], list(negative_context[i, :])) for i in range(context.shape[0])]
+    print("Check: {} == {}?".format(len(negative_samples), len(centre_word_context_windows))
+    print("Check 2: {}, {}, diff?".format(negative_samples[0][1], negative_samples[1][1]))
+    print("Check 3: {}, {}, same pad?".format(centre_word_context_windows[0][1], negative_samples[0][1]))
 
     """Write data to files."""
     '''If saving sequentially.'''  # TODO: compute location of each example.
@@ -221,59 +234,59 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
     '''Load the data.'''
     print("\n\nPreprocessing for embedalign. \nLoading data...")
     with open(path_to_data + training_test + ".en", "r", encoding='utf-8') as f:
-        data_lines_en = f.readlines()
+        data_lines_en=f.readlines()
     with open(path_to_data + training_test + ".fr", "r", encoding='utf-8') as f:
-        data_lines_fr = f.readlines()
+        data_lines_fr=f.readlines()
     print("Loaded data.\n")
 
     print("Getting sentences' sizes...")
     '''Get original dataset sentences' lengths'''
-    lengths_sentences_en = [len(sentence.split(" ")) for sentence in data_lines_en]
-    lengths_sentences_fr = [len(sentence.split(" ")) for sentence in data_lines_fr]
+    lengths_sentences_en=[len(sentence.split(" ")) for sentence in data_lines_en]
+    lengths_sentences_fr=[len(sentence.split(" ")) for sentence in data_lines_fr]
     print("Got sentences' sizes.\n")
 
     def basic_line_mutate_vocab_size(line, lowercase, counter=None):
         '''Split the line on spaces and remove EOL characters from last word.'''
-        line = line.split(" ")
-        line[-1] = line[-1].rstrip("\n").rstrip("\r")
+        line=line.split(" ")
+        line[-1]=line[-1].rstrip("\n").rstrip("\r")
         if (line[-1] == ""):
-            line = line[:-1]
+            line=line[:-1]
 
         '''Lowercase(?) all words in line.'''
         if (lowercase):
-            line = [word.lower() for word in line]
+            line=[word.lower() for word in line]
 
         if (counter is not None):
             counter.update(line)
 
         return line
 
-    counter_en = Counter()
-    counter_fr = Counter()
+    counter_en=Counter()
+    counter_fr=Counter()
 
     print("Counting words and basic preprocessing...")
-    data_lines_en = [basic_line_mutate_vocab_size(line, lowercase, counter_en) for i, line in enumerate(data_lines_en)
+    data_lines_en=[basic_line_mutate_vocab_size(line, lowercase, counter_en) for i, line in enumerate(data_lines_en)
                      if (lengths_sentences_en[i] <= max_sentence_size and lengths_sentences_fr[i] <= max_sentence_size)]
-    data_lines_fr = [basic_line_mutate_vocab_size(line, lowercase, counter_fr) for i, line in enumerate(data_lines_fr)
+    data_lines_fr=[basic_line_mutate_vocab_size(line, lowercase, counter_fr) for i, line in enumerate(data_lines_fr)
                      if (lengths_sentences_en[i] <= max_sentence_size and lengths_sentences_fr[i] <= max_sentence_size)]
     print("Counted words and performed basic preprocessing.\n")
 
-    pad_index_en = threshold + 1
-    pad_index_fr = threshold + 1
+    pad_index_en=threshold + 1
+    pad_index_fr=threshold + 1
     if (threshold == 0):
-        pad_index_en = len(list(counter_en.keys()))
-        pad_index_fr = len(list(counter_fr.keys()))
+        pad_index_en=len(list(counter_en.keys()))
+        pad_index_fr=len(list(counter_fr.keys()))
     else:
         print("Determining what to UNK...")
-        ordered_counts_en = counter_en.most_common()
-        to_unk_en = defaultdict(lambda: True)
+        ordered_counts_en=counter_en.most_common()
+        to_unk_en=defaultdict(lambda: True)
         for word, counts in ordered_counts_en[:threshold]:
-            to_unk_en[word] = False
+            to_unk_en[word]=False
 
-        ordered_counts_fr = counter_fr.most_common()
-        to_unk_fr = defaultdict(lambda: True)
+        ordered_counts_fr=counter_fr.most_common()
+        to_unk_fr=defaultdict(lambda: True)
         for word, counts in ordered_counts_fr[:threshold]:
-            to_unk_fr[word] = False
+            to_unk_fr[word]=False
         print("Determined what to UNK.\n")
 
     # TODO: Get correct maximum sentence length, after setting max.
@@ -286,33 +299,33 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
         '''Indexes all words in the line (implicitly, in the dataset).'''
         for word in line:
             if (word not in word_index_map) and (not to_unk[word]):
-                word_index_map[word] = index.integer
+                word_index_map[word]=index.integer
                 index_word_map.append(word)
                 index.increment_value()
 
-        line = [word_index_map[word] for word in line]
+        line=[word_index_map[word] for word in line]
 
         return line + [pad_index]*(max_sentence_size - len(line))
 
     '''Apply line_mutate to all lines in the dataset.'''
     print("Performing last data preprocessing...")
-    word_index_map_en = defaultdict(lambda: threshold)
-    index_word_map_en = []
-    index_en = MutableInt(0)
-    to_unk_en = defaultdict(lambda: False) if threshold == 0 else to_unk_en
-    data_lines_en = [ea_line_mutate(line, word_index_map_en, index_word_map_en, index_en, to_unk_en, pad_index_en)
+    word_index_map_en=defaultdict(lambda: threshold)
+    index_word_map_en=[]
+    index_en=MutableInt(0)
+    to_unk_en=defaultdict(lambda: False) if threshold == 0 else to_unk_en
+    data_lines_en=[ea_line_mutate(line, word_index_map_en, index_word_map_en, index_en, to_unk_en, pad_index_en)
                      for line in data_lines_en]
 
-    word_index_map_fr = defaultdict(lambda: threshold)
-    index_word_map_fr = []
-    index_fr = MutableInt(0)
-    to_unk_fr = defaultdict(lambda: False) if threshold == 0 else to_unk_fr
-    data_lines_fr = [ea_line_mutate(line, word_index_map_fr, index_word_map_fr, index_fr, to_unk_fr, pad_index_fr)
+    word_index_map_fr=defaultdict(lambda: threshold)
+    index_word_map_fr=[]
+    index_fr=MutableInt(0)
+    to_unk_fr=defaultdict(lambda: False) if threshold == 0 else to_unk_fr
+    data_lines_fr=[ea_line_mutate(line, word_index_map_fr, index_word_map_fr, index_fr, to_unk_fr, pad_index_fr)
                      for line in data_lines_fr]
     if (threshold != 0):
-        word_index_map_en["UNK"] = threshold
+        word_index_map_en["UNK"]=threshold
         index_word_map_en.append("UNK")
-        word_index_map_fr["UNK"] = threshold
+        word_index_map_fr["UNK"]=threshold
         index_word_map_fr.append("UNK")
     print("Performed last data preprocessing.\n")
 
@@ -346,13 +359,13 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
 
 
 if __name__ == '__main__':
-    opt = parse_settings()
+    opt=parse_settings()
 
-    path_to_data = osp.join(opt.data_path, opt.dataset, opt.training_test + opt.language)
+    path_to_data=osp.join(opt.data_path, opt.dataset, opt.training_test + opt.language)
 
-    path_to_data = basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
+    path_to_data=basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
 
     preprocess_data_skipgram(path_to_data, opt.window_size, opt.vocab_size + 1, opt.k, opt.save_sequential)
 
-    preprocess_data_embedalign(opt.data_path + "/" + opt.dataset + "/", opt.training_test, opt.lowercase,
-                               opt.max_sentence_size, opt.vocab_size)
+    # preprocess_data_embedalign(opt.data_path + "/" + opt.dataset + "/", opt.training_test, opt.lowercase,
+    #                            opt.max_sentence_size, opt.vocab_size)
