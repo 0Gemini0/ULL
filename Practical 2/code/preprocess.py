@@ -189,7 +189,7 @@ def preprocess_data_skipgram(path_to_data, window_size, pad_index, k=1, store_se
     print("\rPadding negative samples...")
     negative_context[context == pad_index] = pad_index
     print("\rPutting negative samples to list...")
-    negative_samples = [([], [int(negative_context[i, j]) for j in range(context.shape[1]])) for i in range(context.shape[0])]
+    negative_samples = [([], [int(negative_context[i, j]) for j in range(context.shape[1])) for i in range(context.shape[0])]
     print("Check: {} == {}?".format(len(negative_samples), len(centre_word_context_windows)))
     print("Check 2: {}, {}, diff?".format(negative_samples[0][1], negative_samples[1][1]))
     print("Check 3: {}, {}, same pad?".format(centre_word_context_windows[0][1], negative_samples[0][1]))
@@ -288,12 +288,12 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
         ordered_counts_en = counter_en.most_common()
         to_unk_en = defaultdict(lambda: True)
         for word, counts in ordered_counts_en[:threshold]:
-            to_unk_en[word] = False
+            to_unk_en[word]=False
 
-        ordered_counts_fr = counter_fr.most_common()
-        to_unk_fr = defaultdict(lambda: True)
+        ordered_counts_fr=counter_fr.most_common()
+        to_unk_fr=defaultdict(lambda: True)
         for word, counts in ordered_counts_fr[:threshold]:
-            to_unk_fr[word] = False
+            to_unk_fr[word]=False
         print("Determined what to UNK.\n")
 
     # TODO: Get correct maximum sentence length, after setting max.
@@ -306,33 +306,33 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
         '''Indexes all words in the line (implicitly, in the dataset).'''
         for word in line:
             if (word not in word_index_map) and (not to_unk[word]):
-                word_index_map[word] = index.integer
+                word_index_map[word]=index.integer
                 index_word_map.append(word)
                 index.increment_value()
 
-        line = [word_index_map[word] for word in line]
+        line=[word_index_map[word] for word in line]
 
         return line + [pad_index]*(max_sentence_size - len(line))
 
     '''Apply line_mutate to all lines in the dataset.'''
     print("Performing last data preprocessing...")
-    word_index_map_en = defaultdict(lambda: threshold)
-    index_word_map_en = []
-    index_en = MutableInt(0)
-    to_unk_en = defaultdict(lambda: False) if threshold == 0 else to_unk_en
-    data_lines_en = [ea_line_mutate(line, word_index_map_en, index_word_map_en, index_en, to_unk_en, pad_index_en)
+    word_index_map_en=defaultdict(lambda: threshold)
+    index_word_map_en=[]
+    index_en=MutableInt(0)
+    to_unk_en=defaultdict(lambda: False) if threshold == 0 else to_unk_en
+    data_lines_en=[ea_line_mutate(line, word_index_map_en, index_word_map_en, index_en, to_unk_en, pad_index_en)
                      for line in data_lines_en]
 
-    word_index_map_fr = defaultdict(lambda: threshold)
-    index_word_map_fr = []
-    index_fr = MutableInt(0)
-    to_unk_fr = defaultdict(lambda: False) if threshold == 0 else to_unk_fr
-    data_lines_fr = [ea_line_mutate(line, word_index_map_fr, index_word_map_fr, index_fr, to_unk_fr, pad_index_fr)
+    word_index_map_fr=defaultdict(lambda: threshold)
+    index_word_map_fr=[]
+    index_fr=MutableInt(0)
+    to_unk_fr=defaultdict(lambda: False) if threshold == 0 else to_unk_fr
+    data_lines_fr=[ea_line_mutate(line, word_index_map_fr, index_word_map_fr, index_fr, to_unk_fr, pad_index_fr)
                      for line in data_lines_fr]
     if (threshold != 0):
-        word_index_map_en["UNK"] = threshold
+        word_index_map_en["UNK"]=threshold
         index_word_map_en.append("UNK")
-        word_index_map_fr["UNK"] = threshold
+        word_index_map_fr["UNK"]=threshold
         index_word_map_fr.append("UNK")
     print("Performed last data preprocessing.\n")
 
@@ -366,11 +366,11 @@ def preprocess_data_embedalign(path_to_data, training_test, lowercase, max_sente
 
 
 if __name__ == '__main__':
-    opt = parse_settings()
+    opt=parse_settings()
 
-    path_to_data = osp.join(opt.data_path, opt.dataset, opt.training_test + opt.language)
+    path_to_data=osp.join(opt.data_path, opt.dataset, opt.training_test + opt.language)
 
-    path_to_data = basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
+    path_to_data=basic_dataset_preprocess(path_to_data, opt.vocab_size, opt.lowercase)
 
     preprocess_data_skipgram(path_to_data, opt.window_size, opt.vocab_size + 1, opt.k, opt.save_sequential)
 
