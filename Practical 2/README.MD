@@ -1,12 +1,7 @@
 ***Practical 2 of ULL***
-
-General run command:
+Python version:
 ```
-./main.py [settings]
-```
-Or:
-```
-python3 main.py [settings]
+python 3.5.0 or higher
 ```
 
 Data preprocess run command:
@@ -17,6 +12,23 @@ Or:
 ```
 python3 preprocess.py [settings]
 ```
+
+Model training run command:
+```
+./main.py [settings]
+```
+Or:
+```
+python3 main.py [settings]
+```
+
+LST and AER predictions run command:
+```
+./lst.py [settings]
+```
+Or:
+```
+python3 lst.py [settings]
 
 ***Prerequisites***
 
