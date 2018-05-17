@@ -30,7 +30,7 @@ LST and AER predictions run command:
 Or:
 ```
 python3 lst.py [settings]
-
+```
 
 
 ***Prerequisites***
