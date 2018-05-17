@@ -44,7 +44,7 @@ pip install msgpack_numpy
 
 The folders containing the data can be specified with the following command line settings:
 ```
---data_path: path to folder containing the datasets for all tasks.
---out_path: path to folder where output will be stored.
+--data_path: path to folder containing the datasets for all tasks
+--out_path: path to folder where output will be stored
 ```
 Please correctly specify these based on your file structure via command-line or by changing the defaults in ```settings.py```.
