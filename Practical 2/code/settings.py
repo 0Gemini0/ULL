@@ -48,7 +48,7 @@ def parse_settings():
                         help='Dimensionality of embedding layer D.')
     parser.add_argument('--h_dim', type=int, default=128,
                         help='Dimensionality of hidden layers H.')
-    parser.add_argument('--neg_dim', type=int, default=2500,
+    parser.add_argument('--neg_dim', type=int, default=1000,
                         help='Size of the negative set when using CSS.')
     parser.add_argument('--ea_mode', type=str, default="css",
                         help="How to compute reconstruction loss in ea, choose [css, softmax].")
@@ -58,7 +58,7 @@ def parse_settings():
                         help='Whether to use parallel processing if available.')
     parser.add_argument('--lr', type=float, default=1e-2,
                         help='Learning rate.')
-    parser.add_argument('--num_epochs', type=int, default=50,
+    parser.add_argument('--num_epochs', type=int, default=15,
                         help='Number of epochs over the data.')
     parser.add_argument('--batch_size', type=int, default=1024,
                         help="Number of datapoints per minibatch.")
