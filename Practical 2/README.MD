@@ -39,7 +39,7 @@ Or:
 ```
 python3 aligments.py [settings]
 ```
-Note that you need the saved models in the `--out_path\--dataset` directory for the scripts to work, otherwise they will run evaluation on randomly initialized models.
+Note that you need the saved models in the `--out_path\--dataset` directory for the scripts to work, otherwise they will run evaluation on randomly initialized models. The output files of these scripts are of compatible format to their respective evaluation scripts, which were provided. Moreover, the LST script will output substitutions based on both cosine distance and KL whenever possible.
 
 ***Prerequisites***
 
