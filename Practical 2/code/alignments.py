@@ -14,6 +14,7 @@ def aer(opt):
     # GPU or CPU selection
     device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
     opt.model = "embedalign"
+    opt.neg_dim = 20
 
     # correct v_dim if vocab_size is 0
     if opt.vocab_size == 0:
