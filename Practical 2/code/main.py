@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import os.path as osp
 from time import time
 
@@ -21,6 +22,10 @@ def main(opt):
     # We activate the GPU if cuda is available, otherwise computation will be done on cpu
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Using device: {}".format(device))
+
+    # Check if out folder exists, create otherwise
+    if not osp.isdir(osp.join(opt.out_path, opt.dataset)):
+        os.makedirs(osp.join(opt.out_path, opt.dataset))
 
     # When the vocab size is 0, the entire vocab is used and its size loaded from disk.
     if opt.vocab_size == 0:
