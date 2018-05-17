@@ -40,6 +40,7 @@ Package prerequisites:
 ```
 PyTorch 0.4.0 (please follow installation instructions on https://pytorch.org/)
 pip install numpy
+pip install msgpack
 pip install msgpack_numpy
 ```
 
