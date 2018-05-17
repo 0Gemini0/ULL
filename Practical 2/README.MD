@@ -51,3 +51,9 @@ The folders containing the data can be specified with the following command line
 --out_path: path to folder where output will be stored
 ```
 Please correctly specify these based on your file structure via command-line or by changing the defaults in ```settings.py```.
+
+We assume the `--data_path` to contain:
+```
+hansards/training.en hansards/training.fr
+europarl/training.en europarl/training.fr
+```
