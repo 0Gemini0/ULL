@@ -31,7 +31,15 @@ Or:
 ```
 python3 lst.py [settings]
 ```
-
+And
+```
+./aligments.py [settings]
+```
+Or:
+```
+python3 aligments.py [settings]
+```
+Note that you need the saved models in the `--out_path\--dataset` directory for the scripts to work, otherwise they will run evaluation on randomly initialized models.
 
 ***Prerequisites***
 
