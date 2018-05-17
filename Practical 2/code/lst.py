@@ -194,10 +194,10 @@ def lst(opt):
                                opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, opt.kl_step, device).to(device)
 
         # We give a warning when no model can be loaded
-        try:
-            model = load_model(construct_model_path(opt, True), model)
-        except:
-            print("No model of type {}, calculating scores with untrained model.".format(opt.model))
+        # try:
+        model = load_model(construct_model_path(opt, True), model)
+        # except:
+        #     print("No model of type {}, calculating scores with untrained model.".format(opt.model))
 
         # Storage paths
         cosine_file = osp.join(opt.out_path, opt.dataset, "{}_cos_lst.predictions".format(opt.model))

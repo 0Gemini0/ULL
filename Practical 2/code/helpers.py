@@ -41,6 +41,6 @@ def load_checkpoint(opt, model, optimizers):
 
 
 def load_model(path, model):
-    checkpoint = torch.load(path)
+    checkpoint = torch.load(path, map_location=lambda storage, loc: storage)
     model.load_state_dict(checkpoint['state_dict'])
     return model
