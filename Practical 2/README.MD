@@ -1,6 +1,35 @@
-Practical 2 of ULL.
+***Practical 2 of ULL***
 
-Good LR/batch skipgram: 1e-5/256 -> loss < 11
-			2e-5/512 -> loss <
+General run command:
+```
+./main.py [settings]
+```
+Or:
+```
+python3 main.py [settings]
+```
 
-## TODO 
+Data preprocess run command:
+```
+./preprocess.py [settings]
+```
+Or:
+```
+python3 preprocess.py [settings]
+```
+
+***Prerequisites***
+
+Package prerequisites:
+```
+PyTorch 0.4.0 (please follow installation instructions on https://pytorch.org/)
+pip install numpy
+pip install msgpack_numpy
+```
+
+The folders containing the data can be specified with the following command line settings:
+```
+--data_path: path to folder containing the datasets for all tasks.
+--out_path: path to folder where output will be stored.
+```
+Please correctly specify these based on your file structure via command-line or by changing the defaults in ```settings.py```.
