@@ -36,6 +36,7 @@ python3 lst.py [settings]
 ***Prerequisites***
 
 Package prerequisites:
+
 ```
 PyTorch 0.4.0 (please follow installation instructions on https://pytorch.org/)
 pip install numpy
