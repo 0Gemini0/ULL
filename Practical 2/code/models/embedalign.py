@@ -1,7 +1,7 @@
 """
 EmbedAlign model in PyTorch.
 """
-from time import time()
+from time import time
 
 import torch
 from torch import nn
@@ -15,7 +15,7 @@ class EmbedAlign(nn.Module):
     The EmbedAlign model in PyTorch.
     """
 
-    def __init__(self, v_dim_en, v_dim_fr, d_dim, h_dim, neg_dim, pad_index_en, pad_index_fr, kl_step, device):
+    def __init__(self, v_dim_en, v_dim_fr, d_dim, h_dim, neg_dim, pad_index_en, pad_index_fr, kl_step, mode, device):
         super().__init__()
 
         # KL annealing
@@ -23,7 +23,7 @@ class EmbedAlign(nn.Module):
         self.kl_step = kl_step
 
         self._encoder = Encoder(v_dim_en, h_dim, d_dim, pad_index_en)
-        self._decoder = Decoder(v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index_en, pad_index_fr, device)
+        self._decoder = Decoder(v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index_en, pad_index_fr, mode, device)
         self.sparse_params = self._encoder.sparse_params + self._decoder.sparse_params
         self.device = device
         self.standard_normal = Normal(torch.tensor([0.], device=device), torch.tensor([1.], device=device))
@@ -73,10 +73,10 @@ class EmbedAlign(nn.Module):
         mus, _ = self._encoder(x_en, en_len)
 
         # Decode the means into estimated word and alignment probabilities with CSS
-        fr_probs = self._decoder.softmax_for_align(x_fr, mus)
+        fr_probs = self._decoder.alignment_pass(x_fr,  mus)
 
         # Transform fr_probs into alignments by taking the max over S_e, returning max prob to en as alignment
-        _, alignments = torch.max(fr_probs, dim=2)
+        alignments = torch.max(fr_probs, dim=2)[1]
 
         # [B x S_f]
         return alignments
@@ -135,23 +135,31 @@ class Decoder(nn.Module):
     The decoder part of EmbedAlign.
     """
 
-    def __init__(self, v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index_en, pad_index_fr, device):
+    def __init__(self, v_dim_en, v_dim_fr, d_dim, neg_dim, pad_index_en, pad_index_fr, mode, device):
         super().__init__()
         self.v_dim_en = v_dim_en
         self.v_dim_fr = v_dim_fr
         self.neg_dim = neg_dim
         self.device = device
+        self.mode = mode
 
         self.en_embedding = nn.Embedding(v_dim_en, d_dim, padding_idx=pad_index_en, sparse=True)
         self.fr_embedding = nn.Embedding(v_dim_fr, d_dim, padding_idx=pad_index_fr, sparse=True)
         self.sparse_params = [p for p in self.parameters()]
 
     def forward(self, zs, x_en, x_fr):
-        """Use complementary sum sampling to approximate the probabilities of the french and english sentences given z."""
-        en_probs = self._css(x_en, self.v_dim_en, self.neg_dim, self.en_embedding, zs, "en")
-        fr_probs = self._css(x_fr, self.v_dim_fr, self.neg_dim, self.fr_embedding, zs, "fr")
+        """Approximate the probabilities of the french and english sentences given z."""
+        if self.mode == "css":
+            en_probs = self._css(x_en, self.v_dim_en, self.neg_dim, self.en_embedding, zs, "en")
+            fr_probs = self._css(x_fr, self.v_dim_fr, self.neg_dim, self.fr_embedding, zs, "fr")
+        elif self.mode == "softmax":
+            en_probs = self._score_based_softmax(x_en, self.v_dim_en, self.en_embedding, zs, "en")
+            fr_probs = self._score_based_softmax(x_fr, self.v_dim_fr, self.fr_embedding, zs, "fr")
 
         return en_probs, fr_probs
+
+    def alignment_pass(self, x_fr, mus):
+        return self._score_based_softmax(x_fr, self.v_dim_fr, self.fr_embedding, mus, "fr")
 
     def _css(self, x, v_dim, num, embedding, z, language):
         """Generate a negative set without replacement for CSS given a batch as positive set."""
@@ -191,31 +199,37 @@ class Decoder(nn.Module):
         else:
             return batch_score / (positive_score + negative_score).unsqueeze(1)
 
-    def softmax_for_align(self, x_fr, mu):
-        start = time()
-        full_set = torch.arange(0, self.v_dim_fr, device=self.device)
-        print("arange: {}s".format(time() - start))
-        full_set_embedded = self.fr_embedding(full_set)
-        print("embed: {}s".format(time() - start))
-        # [V_fr x D]
+    def _score_based_softmax(self, x, v_dim, embedding, z, language):
+        """We define word/alignment probability as the softmax over a score function s(z,x)."""
+        full_set = torch.arange(0, v_dim, device=self.device, dtype=torch.long)
+        full_set_embedded = embedding(full_set)
+        # [V x D]
 
-        batch_embeddings = self.fr_embedding(x_fr)
-        batch_score = torch.bmm(batch_embeddings, mu.transpose(1, 2))
-        # [B x S_f x S_e], dot product between every french word an every english latent in B sentences
-        print("batch_scores: {}s".format(time() - start))
+        batch_embeddings = embedding(x)
+        if language == "en":
+            batch_score = (z * batch_embeddings).sum(dim=2)
+            # [B x S_e], dot product between every english word and latent in B x S_e
+        else:
+            batch_score = torch.bmm(batch_embeddings, z.transpose(1, 2))
+            # [B x S_f x S_e], dot product between every french word an every english latent in B sentences
 
-        full_set_score = torch.matmul(mu, full_set_embedded.transpose(2, 3))
-        # [B x S_e x V_fr], dot product between every english latent in B sentences with every french word
-        print("full scores: {}s".format(time() - start))
+        full_set_score = torch.matmul(z, full_set_embedded.transpose(0, 1))
+        # [B x S_e x V], dot product between every english latent in B sentences with every word in V
 
         u = torch.max(full_set_score, dim=2)[0]
         # [B x S_e]
 
         # Compute stable exponentials
-        batch_score = torch.exp(batch_score - u.unsqueeze(1))
+        if language == "en":
+            batch_score = torch.exp(batch_score - u)
+        else:
+            batch_score = torch.exp(batch_score - u.unsqueeze(1))
         full_set_score = torch.exp(full_set_score - u.unsqueeze(2)).sum(dim=2)
         # [B x S_e]
-        print("stable exponents: {}s".format(time() - start))
 
-        return batch_score / full_set_score.unsqueeze(1)
-        # [B x S_f x S_e]
+        if language == "en":
+            return batch_score / full_set_score
+            # [B x S_e]
+        else:
+            return batch_score / full_set_score.unsqueeze(1)
+            # [B x S_f x S_e]

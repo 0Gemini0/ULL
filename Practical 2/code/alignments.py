@@ -14,7 +14,7 @@ def aer(opt):
     # GPU or CPU selection
     device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
     opt.model = "embedalign"
-    opt.neg_dim = 20
+    # opt.neg_dim = 20
 
     # correct v_dim if vocab_size is 0
     if opt.vocab_size == 0:
@@ -49,7 +49,7 @@ def aer(opt):
 
     # Construct and load  model
     model = EmbedAlign(opt.v_dim_en, opt.v_dim_fr, opt.d_dim, opt.h_dim,
-                       opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, opt.kl_step, device).to(device)
+                       opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, opt.kl_step, opt.ea_mode, device).to(device)
 
     try:
         model = load_model(construct_model_path(opt, True), model)

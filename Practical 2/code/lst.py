@@ -191,7 +191,7 @@ def lst(opt):
             model = Bayesian(opt.v_dim_en, opt.d_dim, opt.h_dim, opt.v_dim_en-1).to(device)
         elif opt.model == "embedalign":
             model = EmbedAlign(opt.v_dim_en, opt.v_dim_fr, opt.d_dim, opt.h_dim,
-                               opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, opt.kl_step, device).to(device)
+                               opt.neg_dim, opt.v_dim_en-1, opt.v_dim_fr-1, opt.kl_step, opt.ea_mode, device).to(device)
 
         # We give a warning when no model can be loaded
         try:

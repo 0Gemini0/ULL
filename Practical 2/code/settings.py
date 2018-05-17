@@ -48,7 +48,10 @@ def parse_settings():
                         help='Dimensionality of embedding layer D.')
     parser.add_argument('--h_dim', type=int, default=128,
                         help='Dimensionality of hidden layers H.')
-    parser.add_argument('--neg_dim', type=int, default=2500)
+    parser.add_argument('--neg_dim', type=int, default=2500,
+                        help='Size of the negative set when using CSS.')
+    parser.add_argument('--ea_mode', type=str, default="css",
+                        help="How to compute reconstruction loss in ea, choose [css, softmax].")
 
     # Training
     parser.add_argument('--parallel', type=int, default=0,
