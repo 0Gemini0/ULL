@@ -44,9 +44,12 @@ class EmbedAlign(nn.Module):
 
         # Sum french probs, take log, mask, and sum some more, yielding the reconstruction loss per sentence. Also get the english log probs, masked.
         # Small values are added to the log to ensure stability
+        # We need the inverse_en_mask to compensate for the masking inside log (0 == 1 in log space)
+        inverse_en_mask = (1. - en_mask).float()
+        inverse_en_mask[inverse_en_mask == 0.] = 1e-80
         en_log_probs = torch.log(en_probs + 1e-80) * en_mask.float()
-        fr_rec_loss = (torch.log((fr_probs * en_mask.unsqueeze(dim=1).float()).sum(dim=2) + 1e-80)
-                       * fr_mask.float()).sum(dim=1) / en_len.float()
+        fr_rec_loss = (torch.log((fr_probs * en_mask.unsqueeze(dim=1).float()).sum(dim=2) +
+                                 inverse_en_mask) * fr_mask.float()).sum(dim=1) / en_len.float()
 
         # Compute KL part of the loss, masked for padding
         kl = self._kl_divergence(mus, sigmas) * en_mask.float()
