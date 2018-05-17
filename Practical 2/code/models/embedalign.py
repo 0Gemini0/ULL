@@ -1,6 +1,8 @@
 """
 EmbedAlign model in PyTorch.
 """
+from time import time()
+
 import torch
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
@@ -68,12 +70,12 @@ class EmbedAlign(nn.Module):
     def get_alignments(self, x_en, x_fr, en_len):
         """Using parts of the forward pass we can extract predicted alignments from the model."""
         # Encode the english sentence to Gaussian parameters
-        mus, sigmas = self._encoder(x_en, en_len)
+        mus, _ = self._encoder(x_en, en_len)
 
         # Decode the means into estimated word and alignment probabilities with CSS
-        _, fr_probs = self._decoder(mus, x_en, x_fr)
+        fr_probs = self._decoder.softmax_for_align(x_fr, mus)
 
-        # Transform fr_probs into alignments by taking the max
+        # Transform fr_probs into alignments by taking the max over S_e, returning max prob to en as alignment
         _, alignments = torch.max(fr_probs, dim=2)
 
         # [B x S_f]
@@ -188,3 +190,32 @@ class Decoder(nn.Module):
             return batch_score / (positive_score + negative_score)
         else:
             return batch_score / (positive_score + negative_score).unsqueeze(1)
+
+    def softmax_for_align(self, x_fr, mu):
+        start = time()
+        full_set = torch.arange(0, self.v_dim_fr, device=self.device)
+        print("arange: {}s".format(time() - start))
+        full_set_embedded = self.fr_embedding(full_set)
+        print("embed: {}s".format(time() - start))
+        # [V_fr x D]
+
+        batch_embeddings = self.fr_embedding(x_fr)
+        batch_score = torch.bmm(batch_embeddings, mu.transpose(1, 2))
+        # [B x S_f x S_e], dot product between every french word an every english latent in B sentences
+        print("batch_scores: {}s".format(time() - start))
+
+        full_set_score = torch.matmul(mu, full_set_embedded.transpose(2, 3))
+        # [B x S_e x V_fr], dot product between every english latent in B sentences with every french word
+        print("full scores: {}s".format(time() - start))
+
+        u = torch.max(full_set_score, dim=2)[0]
+        # [B x S_e]
+
+        # Compute stable exponentials
+        batch_score = torch.exp(batch_score - u.unsqueeze(1))
+        full_set_score = torch.exp(full_set_score - u.unsqueeze(2)).sum(dim=2)
+        # [B x S_e]
+        print("stable exponents: {}s".format(time() - start))
+
+        return batch_score / full_set_score.unsqueeze(1)
+        # [B x S_f x S_e]
