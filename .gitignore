@@ -110,3 +110,4 @@ ENV/
 Practical 2/data/
 */.vscode/
 *.pt
+*.ckpt*
